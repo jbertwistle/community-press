@@ -1,1 +1,39 @@
+body{
+    margin:0;
+    background:#d7d0c2;
+    font-family:Georgia, serif;
+}
 
+header{
+    background:#111;
+    color:white;
+    text-align:center;
+    padding:24px;
+}
+
+#toolbar{
+    background:#ece7dc;
+    padding:15px;
+    text-align:center;
+}
+
+button{
+    font-size:20px;
+    padding:12px 24px;
+    cursor:pointer;
+}
+
+#page{
+
+    width:850px;
+    height:1100px;
+
+    margin:40px auto;
+
+    background:white;
+
+    box-shadow:0 0 18px rgba(0,0,0,.25);
+
+    position:relative;
+
+}
