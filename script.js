@@ -163,10 +163,24 @@ function connectButtons() {
         closeShapeTray();
     });
 
-    drawButton.addEventListener("click", toggleDrawing);
-    undoButton.addEventListener("click", undo);
-    deleteButton.addEventListener("click", deleteSelectedObject);
-    printButton.addEventListener("click", prepareAndPrint);
+   drawButton.addEventListener("click", toggleDrawing);
+
+undoButton.addEventListener("click", undo);
+
+duplicateButton.addEventListener(
+    "click",
+    duplicateSelectedObject
+);
+
+deleteButton.addEventListener(
+    "click",
+    deleteSelectedObject
+);
+
+printButton.addEventListener(
+    "click",
+    prepareAndPrint
+);
 
     document.addEventListener("keydown", event => {
         const activeObject = canvas.getActiveObject();
