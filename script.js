@@ -163,7 +163,7 @@ function connectButtons() {
         closeShapeTray();
     });
 
-   drawButton.addEventListener("click", toggleDrawing);
+  drawButton.addEventListener("click", toggleDrawing);
 
 undoButton.addEventListener("click", undo);
 
