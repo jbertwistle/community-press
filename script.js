@@ -37,6 +37,8 @@ const photoInput = document.getElementById("photoInput");
 
 let canvas;
 let drawingEnabled = false;
+let lastSelectedObject = null;
+
 
 let history = [];
 let restoringHistory = false;
