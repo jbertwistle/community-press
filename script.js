@@ -120,14 +120,18 @@ function configureCanvas() {
     canvas.on("object:removed", rememberChange);
     canvas.on("path:created", rememberChange);
 
-    canvas.on("selection:created", updateObjectStatus);
-    canvas.on("selection:updated", updateObjectStatus);
+  canvas.on("selection:created", rememberSelectedObject);
+canvas.on("selection:updated", rememberSelectedObject);
 
-    canvas.on("selection:cleared", () => {
-        if (!drawingEnabled) {
-            setStatus("status: ready");
-        }
-    });
+canvas.on("selection:cleared", () => {
+    /*
+     * Keep the last object available when someone
+     * moves from the canvas to a toolbar button.
+     */
+    if (!drawingEnabled) {
+        setStatus("status: ready");
+    }
+});
 
     window.addEventListener("resize", resizeCanvasDisplay);
 
