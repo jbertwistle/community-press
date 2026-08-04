@@ -142,9 +142,7 @@ canvas.on("selection:cleared", () => {
    BUTTONS
 -------------------------------------------------- */
 
-function connectButtons() {
-    headlineButton.addEventListener("click", addHeadline);
-    textButton.addEventListener("click", addBodyText);
+
 
 function connectButtons() {
     document
@@ -662,7 +660,52 @@ function keepObjectOnSheet(event) {
 
     object.setCoords();
 }
+/* --------------------------------------------------
+   DUPLICATE
+-------------------------------------------------- */
 
+async function duplicateSelectedObject() {
+    stopDrawing();
+    closeShapeTray();
+
+    const original =
+        canvas.getActiveObject() ||
+        lastSelectedObject;
+
+    if (!original) {
+        setStatus("nothing selected");
+        return;
+    }
+
+    setStatus("duplicating...");
+
+    try {
+        const copy = await original.clone();
+
+        copy.set({
+            left: (original.left ?? 0) + 40,
+            top: (original.top ?? 0) + 40,
+            evented: true,
+            selectable: true
+        });
+
+        canvas.add(copy);
+
+        keepObjectOnSheet({
+            target: copy
+        });
+
+        canvas.setActiveObject(copy);
+        lastSelectedObject = copy;
+
+        canvas.requestRenderAll();
+
+        setStatus("object duplicated");
+    } catch (error) {
+        console.error("Duplicate failed:", error);
+        setStatus("duplicate failed");
+    }
+}
 /* --------------------------------------------------
    DELETE
 -------------------------------------------------- */
