@@ -21,6 +21,7 @@ const machineStatus = document.getElementById("machineStatus");
 
 const headlineButton = document.getElementById("headlineButton");
 const textButton = document.getElementById("textButton");
+const talkButton = document.getElementById("talkButton");
 const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
@@ -38,6 +39,10 @@ const photoInput = document.getElementById("photoInput");
 let canvas;
 let drawingEnabled = false;
 let lastSelectedObject = null;
+
+let speechRecognition = null;
+let speechIsListening = false;
+let dictatedText = "";
 
 
 let history = [];
@@ -155,6 +160,13 @@ function connectButtons() {
 
     headlineButton.addEventListener("click", addHeadline);
     textButton.addEventListener("click", addBodyText);
+
+   
+
+talkButton.addEventListener(
+    "click",
+    toggleSpeechRecognition
+);
 
     photoButton.addEventListener("click", () => {
         stopDrawing();
@@ -311,7 +323,179 @@ function addBodyText() {
         canvas.requestRenderAll();
     }, 170);
 }
+/* --------------------------------------------------
+   TALK / SPEECH TO TEXT
+-------------------------------------------------- */
 
+function toggleSpeechRecognition() {
+    if (speechIsListening) {
+        stopSpeechRecognition();
+        return;
+    }
+
+    startSpeechRecognition();
+}
+
+function startSpeechRecognition() {
+    stopDrawing();
+    closeShapeTray();
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        setStatus("speech unavailable · use words");
+        return;
+    }
+
+    dictatedText = "";
+
+    speechRecognition = new SpeechRecognition();
+
+    /*
+     * Canadian English for the first prototype.
+     * This can later become a language-choice control.
+     */
+    speechRecognition.lang = "en-CA";
+
+    /*
+     * One spoken passage per button press.
+     */
+    speechRecognition.continuous = false;
+    speechRecognition.interimResults = true;
+    speechRecognition.maxAlternatives = 1;
+
+    speechRecognition.onstart = () => {
+        speechIsListening = true;
+
+        talkButton.classList.add("active");
+        setStatus("listening...");
+    };
+
+    speechRecognition.onresult = event => {
+        let interimText = "";
+
+        for (
+            let index = event.resultIndex;
+            index < event.results.length;
+            index += 1
+        ) {
+            const transcript =
+                event.results[index][0].transcript;
+
+            if (event.results[index].isFinal) {
+                dictatedText += transcript;
+            } else {
+                interimText += transcript;
+            }
+        }
+
+        if (interimText.trim()) {
+            setStatus(`hearing: ${interimText.trim()}`);
+        }
+    };
+
+    speechRecognition.onerror = event => {
+        console.error(
+            "Speech recognition error:",
+            event.error
+        );
+
+        speechIsListening = false;
+        talkButton.classList.remove("active");
+
+        switch (event.error) {
+            case "not-allowed":
+            case "service-not-allowed":
+                setStatus("microphone permission required");
+                break;
+
+            case "no-speech":
+                setStatus("no speech detected");
+                break;
+
+            case "audio-capture":
+                setStatus("microphone unavailable");
+                break;
+
+            default:
+                setStatus("speech recognition failed");
+        }
+    };
+
+    speechRecognition.onend = () => {
+        speechIsListening = false;
+        talkButton.classList.remove("active");
+
+        const finishedText = dictatedText.trim();
+
+        if (finishedText) {
+            insertDictatedText(finishedText);
+        } else if (
+            machineStatus.textContent === "listening..."
+        ) {
+            setStatus("no speech detected");
+        }
+
+        speechRecognition = null;
+    };
+
+    try {
+        speechRecognition.start();
+    } catch (error) {
+        console.error(
+            "Speech recognition could not start:",
+            error
+        );
+
+        speechIsListening = false;
+        talkButton.classList.remove("active");
+
+        setStatus("speech could not start");
+    }
+}
+
+function stopSpeechRecognition() {
+    if (!speechRecognition) {
+        return;
+    }
+
+    setStatus("processing speech...");
+    speechRecognition.stop();
+}
+
+function insertDictatedText(textValue) {
+    const text = new fabric.Textbox(
+        textValue,
+        {
+            left: 100,
+            top: 220,
+
+            width: 690,
+
+            fontFamily: "Georgia",
+            fontSize: 36,
+            lineHeight: 1.18,
+
+            fill: "#171611",
+
+            editable: true,
+            opacity: 0
+        }
+    );
+
+    canvas.add(text);
+    canvas.setActiveObject(text);
+
+    animateObjectArrival(text, 220);
+
+    lastSelectedObject = text;
+
+    canvas.requestRenderAll();
+
+    setStatus("speech inserted");
+}
 /* --------------------------------------------------
    IMAGE IMPORT
 -------------------------------------------------- */
