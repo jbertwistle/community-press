@@ -146,20 +146,25 @@ function connectButtons() {
     headlineButton.addEventListener("click", addHeadline);
     textButton.addEventListener("click", addBodyText);
 
+function connectButtons() {
+    document
+        .querySelectorAll("#toolTray button, #shapeTray button")
+        .forEach(button => {
+            button.addEventListener("pointerdown", event => {
+                event.preventDefault();
+            });
+        });
+
+    headlineButton.addEventListener("click", addHeadline);
+    textButton.addEventListener("click", addBodyText);
+
     photoButton.addEventListener("click", () => {
         stopDrawing();
         closeShapeTray();
 
         setStatus("waiting for image...");
         photoInput.click();
-        document
-    .querySelectorAll("#toolTray button, #shapeTray button")
-    .forEach(button => {
-        button.addEventListener("pointerdown", event => {
-            event.preventDefault();
-        });
     });
-    
 
     photoInput.addEventListener("change", addPhoto);
 
@@ -176,24 +181,24 @@ function connectButtons() {
         closeShapeTray();
     });
 
-  drawButton.addEventListener("click", toggleDrawing);
+    drawButton.addEventListener("click", toggleDrawing);
 
-undoButton.addEventListener("click", undo);
+    undoButton.addEventListener("click", undo);
 
-duplicateButton.addEventListener(
-    "click",
-    duplicateSelectedObject
-);
+    duplicateButton.addEventListener(
+        "click",
+        duplicateSelectedObject
+    );
 
-deleteButton.addEventListener(
-    "click",
-    deleteSelectedObject
-);
+    deleteButton.addEventListener(
+        "click",
+        deleteSelectedObject
+    );
 
-printButton.addEventListener(
-    "click",
-    prepareAndPrint
-);
+    printButton.addEventListener(
+        "click",
+        prepareAndPrint
+    );
 
     document.addEventListener("keydown", event => {
         const activeObject = canvas.getActiveObject();
@@ -202,11 +207,6 @@ printButton.addEventListener(
             event.key === "Delete" ||
             event.key === "Backspace"
         ) {
-            /*
-             * Do not delete the complete text object
-             * while someone is editing its contents.
-             */
-
             if (activeObject?.isEditing) {
                 return;
             }
@@ -221,9 +221,16 @@ printButton.addEventListener(
             event.preventDefault();
             undo();
         }
+
+        if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === "d"
+        ) {
+            event.preventDefault();
+            duplicateSelectedObject();
+        }
     });
 }
-
 /* --------------------------------------------------
    TEXT
 -------------------------------------------------- */
