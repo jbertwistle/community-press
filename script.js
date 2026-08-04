@@ -25,6 +25,10 @@ const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
 const undoButton = document.getElementById("undoButton");
+
+const duplicateButton =
+    document.getElementById("duplicateButton");
+
 const deleteButton = document.getElementById("deleteButton");
 const printButton = document.getElementById("printButton");
 
