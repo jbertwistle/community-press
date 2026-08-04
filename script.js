@@ -494,7 +494,15 @@ function createWing() {
         }
     );
 }
+function rememberSelectedObject() {
+    const selected = canvas.getActiveObject();
 
+    if (selected) {
+        lastSelectedObject = selected;
+    }
+
+    updateObjectStatus();
+}
 /* --------------------------------------------------
    OBJECT ARRIVAL
 -------------------------------------------------- */
