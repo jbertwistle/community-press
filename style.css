@@ -183,7 +183,7 @@ button {
     width: min(1250px, calc(100% - 30px));
 
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
+    grid-template-columns: repeat(10, 1fr);
     gap: 7px;
 
     padding: 9px;
