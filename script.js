@@ -1,17 +1,23 @@
 "use strict";
 
 /*
- * COMMUNITY PRESS v1.0
+ * COMMUNITY PRESS v1.1
  *
- * The design canvas uses an internal fixed size.
- * CSS scales it to fit the available screen.
+ * A public broadsheet-making surface.
+ *
+ * The internal canvas stays at a fixed size.
+ * CSS scales it to the available screen.
  */
 
-const CANVAS_WIDTH = 1200;
-const CANVAS_HEIGHT = 780;
+const CANVAS_WIDTH = 1320;
+const CANVAS_HEIGHT = 820;
+
+const SAFE_MARGIN = 28;
 
 const canvasElement = document.getElementById("pressCanvas");
 const canvasFrame = document.getElementById("canvasFrame");
+
+const machineStatus = document.getElementById("machineStatus");
 
 const headlineButton = document.getElementById("headlineButton");
 const textButton = document.getElementById("textButton");
@@ -27,23 +33,31 @@ const photoInput = document.getElementById("photoInput");
 
 let canvas;
 let drawingEnabled = false;
+
 let history = [];
 let restoringHistory = false;
 
 startCommunityPress();
 
+/* --------------------------------------------------
+   STARTUP
+-------------------------------------------------- */
+
 function startCommunityPress() {
     if (typeof fabric === "undefined") {
         showStartupError(
-            "The page-making library did not load. Refresh the page and try again."
+            "fabric unavailable · reload required"
         );
+
         return;
     }
 
     canvas = new fabric.Canvas(canvasElement, {
         width: CANVAS_WIDTH,
         height: CANVAS_HEIGHT,
+
         backgroundColor: "rgba(255,255,255,0)",
+
         preserveObjectStacking: true,
         selection: true
     });
@@ -51,7 +65,13 @@ function startCommunityPress() {
     configureCanvas();
     connectButtons();
     saveHistory();
+
+    setStatus("status: ready");
 }
+
+/* --------------------------------------------------
+   CANVAS CONFIGURATION
+-------------------------------------------------- */
 
 function configureCanvas() {
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
@@ -59,33 +79,68 @@ function configureCanvas() {
     canvas.freeDrawingBrush.width = 8;
 
     /*
-     * Larger controls are easier to see and grab on a touchscreen.
+     * Smaller, utilitarian controls.
+     * Less PowerPoint, more drafting table.
      */
+
     fabric.Object.prototype.set({
         transparentCorners: false,
-        cornerColor: "#d7cfb9",
-        cornerStrokeColor: "#171611",
+
+        cornerColor: "#171611",
+        cornerStrokeColor: "#d7cfb9",
         borderColor: "#171611",
-        cornerSize: 18,
-        padding: 6
+
+        cornerStyle: "rect",
+        cornerSize: 13,
+
+        borderScaleFactor: 1.25,
+        padding: 4
     });
+
+    /*
+     * Keep objects on the printable sheet.
+     */
+
+    canvas.on("object:moving", keepObjectOnSheet);
+    canvas.on("object:scaling", keepObjectOnSheet);
+    canvas.on("object:modified", keepObjectOnSheet);
+
+    /*
+     * Remember actions for Undo.
+     */
 
     canvas.on("object:added", rememberChange);
     canvas.on("object:modified", rememberChange);
     canvas.on("object:removed", rememberChange);
     canvas.on("path:created", rememberChange);
 
+    canvas.on("selection:created", updateObjectStatus);
+    canvas.on("selection:updated", updateObjectStatus);
+
+    canvas.on("selection:cleared", () => {
+        if (!drawingEnabled) {
+            setStatus("status: ready");
+        }
+    });
+
     window.addEventListener("resize", resizeCanvasDisplay);
 
     resizeCanvasDisplay();
 }
+
+/* --------------------------------------------------
+   BUTTONS
+-------------------------------------------------- */
 
 function connectButtons() {
     headlineButton.addEventListener("click", addHeadline);
     textButton.addEventListener("click", addBodyText);
 
     photoButton.addEventListener("click", () => {
+        stopDrawing();
         closeShapeTray();
+
+        setStatus("waiting for image...");
         photoInput.click();
     });
 
@@ -105,27 +160,23 @@ function connectButtons() {
     });
 
     drawButton.addEventListener("click", toggleDrawing);
-
     undoButton.addEventListener("click", undo);
-
     deleteButton.addEventListener("click", deleteSelectedObject);
-
     printButton.addEventListener("click", prepareAndPrint);
 
     document.addEventListener("keydown", event => {
+        const activeObject = canvas.getActiveObject();
+
         if (
             event.key === "Delete" ||
             event.key === "Backspace"
         ) {
-            const activeObject = canvas.getActiveObject();
-
             /*
-             * Do not delete the whole object while someone is editing text.
+             * Do not delete the complete text object
+             * while someone is editing its contents.
              */
-            if (
-                activeObject &&
-                activeObject.isEditing
-            ) {
+
+            if (activeObject?.isEditing) {
                 return;
             }
 
@@ -142,33 +193,48 @@ function connectButtons() {
     });
 }
 
-/* ---------- Text ---------- */
+/* --------------------------------------------------
+   TEXT
+-------------------------------------------------- */
 
 function addHeadline() {
     stopDrawing();
     closeShapeTray();
 
-    const headline = new fabric.IText("TYPE YOUR HEADLINE", {
-        left: 80,
-        top: 80,
-        width: 900,
+    const headline = new fabric.Textbox(
+        "TYPE HEADLINE",
+        {
+            left: 90,
+            top: 75,
 
-        fontFamily: "Impact, Arial Black, sans-serif",
-        fontSize: 82,
-        fontWeight: "bold",
-        lineHeight: 0.9,
+            width: 900,
 
-        fill: "#171611",
+            fontFamily: "Courier New",
+            fontSize: 72,
+            fontWeight: "bold",
+            lineHeight: 0.92,
 
-        editable: true
-    });
+            fill: "#171611",
+
+            editable: true,
+
+            opacity: 0
+        }
+    );
 
     canvas.add(headline);
     canvas.setActiveObject(headline);
-    canvas.requestRenderAll();
 
-    headline.enterEditing();
-    headline.selectAll();
+    animateObjectArrival(headline, 75);
+
+    setStatus("headline inserted");
+
+    window.setTimeout(() => {
+        headline.enterEditing();
+        headline.selectAll();
+
+        canvas.requestRenderAll();
+    }, 170);
 }
 
 function addBodyText() {
@@ -176,31 +242,43 @@ function addBodyText() {
     closeShapeTray();
 
     const text = new fabric.Textbox(
-        "Speak, type or write something here.",
+        "Type or write something here.",
         {
             left: 100,
             top: 220,
-            width: 650,
 
-            fontFamily: "Georgia, Times New Roman, serif",
-            fontSize: 38,
-            lineHeight: 1.15,
+            width: 690,
+
+            fontFamily: "Georgia",
+            fontSize: 36,
+            lineHeight: 1.18,
 
             fill: "#171611",
 
-            editable: true
+            editable: true,
+
+            opacity: 0
         }
     );
 
     canvas.add(text);
     canvas.setActiveObject(text);
-    canvas.requestRenderAll();
 
-    text.enterEditing();
-    text.selectAll();
+    animateObjectArrival(text, 220);
+
+    setStatus("text object inserted");
+
+    window.setTimeout(() => {
+        text.enterEditing();
+        text.selectAll();
+
+        canvas.requestRenderAll();
+    }, 170);
 }
 
-/* ---------- Photos ---------- */
+/* --------------------------------------------------
+   IMAGE IMPORT
+-------------------------------------------------- */
 
 function addPhoto(event) {
     stopDrawing();
@@ -209,14 +287,20 @@ function addPhoto(event) {
     const file = event.target.files?.[0];
 
     if (!file) {
+        setStatus("image import cancelled");
         return;
     }
 
     if (!file.type.startsWith("image/")) {
         window.alert("Please choose an image file.");
+
         photoInput.value = "";
+        setStatus("unsupported file");
+
         return;
     }
+
+    setStatus("reading image...");
 
     const reader = new FileReader();
 
@@ -229,8 +313,8 @@ function addPhoto(event) {
                 }
             );
 
-            const maximumWidth = 700;
-            const maximumHeight = 520;
+            const maximumWidth = 730;
+            const maximumHeight = 540;
 
             const scale = Math.min(
                 maximumWidth / image.width,
@@ -239,32 +323,44 @@ function addPhoto(event) {
             );
 
             image.set({
-                left: 120,
-                top: 120,
+                left: 150,
+                top: 110,
+
                 scaleX: scale,
-                scaleY: scale
+                scaleY: scale,
+
+                opacity: 0
             });
 
             canvas.add(image);
             canvas.setActiveObject(image);
-            canvas.requestRenderAll();
+
+            animateObjectArrival(image, 110);
+
+            setStatus("image imported");
         } catch (error) {
             console.error(error);
-            window.alert("That photo could not be added.");
+
+            window.alert("That image could not be added.");
+            setStatus("image import failed");
         } finally {
             photoInput.value = "";
         }
     });
 
     reader.addEventListener("error", () => {
-        window.alert("That photo could not be read.");
+        window.alert("That image could not be read.");
+
         photoInput.value = "";
+        setStatus("image read failed");
     });
 
     reader.readAsDataURL(file);
 }
 
-/* ---------- Shapes and collage ---------- */
+/* --------------------------------------------------
+   SHAPES
+-------------------------------------------------- */
 
 function addShape(shapeName) {
     stopDrawing();
@@ -274,23 +370,23 @@ function addShape(shapeName) {
     switch (shapeName) {
         case "circle":
             shape = new fabric.Circle({
-                radius: 100,
+                radius: 95,
                 fill: "#171611"
             });
             break;
 
         case "square":
             shape = new fabric.Rect({
-                width: 220,
-                height: 220,
+                width: 205,
+                height: 205,
                 fill: "#171611"
             });
             break;
 
         case "triangle":
             shape = new fabric.Triangle({
-                width: 240,
-                height: 220,
+                width: 225,
+                height: 210,
                 fill: "#171611"
             });
             break;
@@ -308,22 +404,31 @@ function addShape(shapeName) {
     }
 
     shape.set({
-        left: 170,
-        top: 150
+        left: 180,
+        top: 145,
+        opacity: 0
     });
 
     canvas.add(shape);
     canvas.setActiveObject(shape);
-    canvas.requestRenderAll();
+
+    animateObjectArrival(shape, 145);
+
+    setStatus(`${shapeName} inserted`);
 }
 
 function createStar() {
     const points = [];
-    const outsideRadius = 120;
-    const insideRadius = 52;
+
+    const outsideRadius = 115;
+    const insideRadius = 50;
     const pointCount = 5;
 
-    for (let index = 0; index < pointCount * 2; index += 1) {
+    for (
+        let index = 0;
+        index < pointCount * 2;
+        index += 1
+    ) {
         const radius =
             index % 2 === 0
                 ? outsideRadius
@@ -334,8 +439,13 @@ function createStar() {
             (index * Math.PI) / pointCount;
 
         points.push({
-            x: Math.cos(angle) * radius + outsideRadius,
-            y: Math.sin(angle) * radius + outsideRadius
+            x:
+                Math.cos(angle) * radius +
+                outsideRadius,
+
+            y:
+                Math.sin(angle) * radius +
+                outsideRadius
         });
     }
 
@@ -345,11 +455,6 @@ function createStar() {
 }
 
 function createWing() {
-    /*
-     * A broad teardrop form that can be duplicated,
-     * rotated and combined into a butterfly.
-     */
-
     return new fabric.Path(
         [
             "M", 20, 145,
@@ -366,7 +471,48 @@ function createWing() {
     );
 }
 
-/* ---------- Drawing ---------- */
+/* --------------------------------------------------
+   OBJECT ARRIVAL
+-------------------------------------------------- */
+
+function animateObjectArrival(object, finalTop) {
+    /*
+     * A slight mechanical drop.
+     * No bounce and no congratulatory flourish.
+     */
+
+    object.set({
+        top: finalTop - 18,
+        opacity: 0
+    });
+
+    object.animate(
+        {
+            top: finalTop,
+            opacity: 1
+        },
+        {
+            duration: 150,
+            easing: fabric.util.ease.easeOutCubic,
+
+            onChange: () => {
+                canvas.requestRenderAll();
+            },
+
+            onComplete: () => {
+                keepObjectOnSheet({
+                    target: object
+                });
+
+                canvas.requestRenderAll();
+            }
+        }
+    );
+}
+
+/* --------------------------------------------------
+   DRAWING
+-------------------------------------------------- */
 
 function toggleDrawing() {
     closeShapeTray();
@@ -374,39 +520,116 @@ function toggleDrawing() {
     drawingEnabled = !drawingEnabled;
     canvas.isDrawingMode = drawingEnabled;
 
-    drawButton.classList.toggle("active", drawingEnabled);
+    drawButton.classList.toggle(
+        "active",
+        drawingEnabled
+    );
 
     if (drawingEnabled) {
         canvas.discardActiveObject();
         canvas.requestRenderAll();
+
+        setStatus("mode: draw");
+    } else {
+        setStatus("mode: select");
     }
 }
 
 function stopDrawing() {
     drawingEnabled = false;
     canvas.isDrawingMode = false;
+
     drawButton.classList.remove("active");
 }
 
-/* ---------- Shapes tray ---------- */
+/* --------------------------------------------------
+   SHAPE TRAY
+-------------------------------------------------- */
 
 function toggleShapeTray() {
     stopDrawing();
+
+    const isOpening =
+        shapeTray.classList.contains("hidden");
+
     shapeTray.classList.toggle("hidden");
+
+    setStatus(
+        isOpening
+            ? "shape tray open"
+            : "shape tray closed"
+    );
 }
 
 function closeShapeTray() {
     shapeTray.classList.add("hidden");
 }
 
-/* ---------- Delete ---------- */
+/* --------------------------------------------------
+   KEEP OBJECTS ON THE SHEET
+-------------------------------------------------- */
+
+function keepObjectOnSheet(event) {
+    const object = event.target;
+
+    if (!object) {
+        return;
+    }
+
+    object.setCoords();
+
+    const bounds = object.getBoundingRect();
+
+    /*
+     * Adjust using the object's current position.
+     * This allows rotation while still keeping some
+     * visible, printable margin around the object.
+     */
+
+    if (bounds.left < SAFE_MARGIN) {
+        object.left += SAFE_MARGIN - bounds.left;
+    }
+
+    if (bounds.top < SAFE_MARGIN) {
+        object.top += SAFE_MARGIN - bounds.top;
+    }
+
+    if (
+        bounds.left + bounds.width >
+        CANVAS_WIDTH - SAFE_MARGIN
+    ) {
+        object.left -=
+            bounds.left +
+            bounds.width -
+            (CANVAS_WIDTH - SAFE_MARGIN);
+    }
+
+    if (
+        bounds.top + bounds.height >
+        CANVAS_HEIGHT - SAFE_MARGIN
+    ) {
+        object.top -=
+            bounds.top +
+            bounds.height -
+            (CANVAS_HEIGHT - SAFE_MARGIN);
+    }
+
+    object.setCoords();
+}
+
+/* --------------------------------------------------
+   DELETE
+-------------------------------------------------- */
 
 function deleteSelectedObject() {
     const activeObjects = canvas.getActiveObjects();
 
     if (activeObjects.length === 0) {
+        setStatus("nothing selected");
         return;
     }
+
+    const objectCount = activeObjects.length;
 
     activeObjects.forEach(object => {
         canvas.remove(object);
@@ -414,23 +637,28 @@ function deleteSelectedObject() {
 
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+
+    setStatus(
+        objectCount === 1
+            ? "object deleted"
+            : `${objectCount} objects deleted`
+    );
 }
 
-/* ---------- Undo ---------- */
+/* --------------------------------------------------
+   UNDO
+-------------------------------------------------- */
 
 function rememberChange() {
     if (restoringHistory) {
         return;
     }
 
-    /*
-     * Wait until Fabric has completed the current action.
-     */
     window.clearTimeout(rememberChange.timer);
 
     rememberChange.timer = window.setTimeout(() => {
         saveHistory();
-    }, 80);
+    }, 90);
 }
 
 function saveHistory() {
@@ -442,9 +670,6 @@ function saveHistory() {
 
     history.push(state);
 
-    /*
-     * Keep memory use under control in a public kiosk.
-     */
     if (history.length > 30) {
         history.shift();
     }
@@ -452,6 +677,7 @@ function saveHistory() {
 
 async function undo() {
     if (history.length <= 1) {
+        setStatus("undo unavailable");
         return;
     }
 
@@ -466,15 +692,22 @@ async function undo() {
 
     try {
         await canvas.loadFromJSON(previousState);
+
         canvas.requestRenderAll();
+
+        setStatus("previous state restored");
     } catch (error) {
         console.error("Undo failed:", error);
+
+        setStatus("undo failed");
     } finally {
         restoringHistory = false;
     }
 }
 
-/* ---------- Printing ---------- */
+/* --------------------------------------------------
+   PRINT
+-------------------------------------------------- */
 
 function prepareAndPrint() {
     stopDrawing();
@@ -483,28 +716,79 @@ function prepareAndPrint() {
     canvas.discardActiveObject();
     canvas.requestRenderAll();
 
-    /*
-     * Allow the selection controls to disappear before printing.
-     */
+    setStatus("preparing print...");
+
     window.setTimeout(() => {
         window.print();
-    }, 100);
+
+        setStatus("print command sent");
+    }, 120);
 }
 
-/* ---------- Display scaling ---------- */
+/* --------------------------------------------------
+   STATUS
+-------------------------------------------------- */
+
+function setStatus(message) {
+    machineStatus.textContent = message;
+}
+
+function updateObjectStatus() {
+    const objectCount =
+        canvas.getActiveObjects().length;
+
+    if (objectCount > 1) {
+        setStatus(`${objectCount} objects selected`);
+        return;
+    }
+
+    const object = canvas.getActiveObject();
+
+    if (!object) {
+        setStatus("status: ready");
+        return;
+    }
+
+    const objectName = getObjectName(object);
+
+    setStatus(`${objectName} selected`);
+}
+
+function getObjectName(object) {
+    const type =
+        object.type?.toLowerCase() ?? "object";
+
+    if (
+        type.includes("text") ||
+        type.includes("i-text")
+    ) {
+        return "text";
+    }
+
+    if (type.includes("image")) {
+        return "image";
+    }
+
+    if (type.includes("path")) {
+        return "path";
+    }
+
+    return type;
+}
+
+/* --------------------------------------------------
+   DISPLAY SCALING
+-------------------------------------------------- */
 
 function resizeCanvasDisplay() {
     if (!canvas || !canvasFrame) {
         return;
     }
 
-    const displayWidth = canvasFrame.clientWidth;
-    const displayHeight = canvasFrame.clientHeight;
-
     canvas.setDimensions(
         {
-            width: displayWidth,
-            height: displayHeight
+            width: canvasFrame.clientWidth,
+            height: canvasFrame.clientHeight
         },
         {
             cssOnly: true
@@ -515,7 +799,9 @@ function resizeCanvasDisplay() {
     canvas.requestRenderAll();
 }
 
-/* ---------- Startup error ---------- */
+/* --------------------------------------------------
+   STARTUP ERROR
+-------------------------------------------------- */
 
 function showStartupError(message) {
     canvasFrame.innerHTML = "";
@@ -523,8 +809,12 @@ function showStartupError(message) {
     const errorBox = document.createElement("p");
 
     errorBox.textContent = message;
-    errorBox.style.padding = "30px";
-    errorBox.style.fontSize = "24px";
+
+    errorBox.style.padding = "25px";
+    errorBox.style.fontFamily =
+        '"Courier New", monospace';
+
+    errorBox.style.fontSize = "18px";
     errorBox.style.fontWeight = "bold";
 
     canvasFrame.appendChild(errorBox);
