@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press v1.0</title>
+    <title>Community Press v1.1</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -22,10 +22,22 @@
 
     <section id="sheet">
 
-        <div id="masthead">
-            <p>COMMUNITY PRESS · v1.0</p>
-            <h1>MAKE A PAGE</h1>
-        </div>
+        <header id="machineHeader">
+
+            <div class="machineIdentity">
+                <p>community_press · v1.1</p>
+                <p>sheet: <span id="sheetNumber">00001</span></p>
+            </div>
+
+            <div
+                id="machineStatus"
+                role="status"
+                aria-live="polite"
+            >
+                status: ready
+            </div>
+
+        </header>
 
         <div id="canvasFrame">
             <canvas id="pressCanvas"></canvas>
@@ -47,7 +59,7 @@
 
         <button id="photoButton" type="button">
             <span aria-hidden="true">▣</span>
-            PHOTO
+            IMAGE
         </button>
 
         <button id="shapesButton" type="button">
@@ -77,25 +89,29 @@
 
     </nav>
 
-    <section id="shapeTray" class="popoutTray hidden" aria-label="Shapes">
+    <section
+        id="shapeTray"
+        class="popoutTray hidden"
+        aria-label="Insert shape"
+    >
 
-        <button type="button" data-shape="circle" aria-label="Add circle">
+        <button type="button" data-shape="circle" aria-label="Insert circle">
             ●
         </button>
 
-        <button type="button" data-shape="square" aria-label="Add square">
+        <button type="button" data-shape="square" aria-label="Insert square">
             ■
         </button>
 
-        <button type="button" data-shape="triangle" aria-label="Add triangle">
+        <button type="button" data-shape="triangle" aria-label="Insert triangle">
             ▲
         </button>
 
-        <button type="button" data-shape="star" aria-label="Add star">
+        <button type="button" data-shape="star" aria-label="Insert star">
             ★
         </button>
 
-        <button type="button" data-shape="wing" aria-label="Add butterfly wing">
+        <button type="button" data-shape="wing" aria-label="Insert wing">
             WING
         </button>
 
