@@ -8,49 +8,105 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press</title>
+    <title>Community Press v1.0</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- Fabric.js -->
+    <script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
 </head>
 
 <body>
 
 <main id="press">
 
-    <section id="sheet" aria-label="Community Press one-sheet">
+    <section id="sheet">
 
-        <div class="masthead">
-            <p class="issue">COMMUNITY PRESS · ISSUE 0001</p>
-
-            <h1>WHAT WOULD YOU<br>LIKE TO PUBLISH?</h1>
-
-            <p class="instruction">
-                Touch the tools below. Move your words around the page.
-            </p>
+        <div id="masthead">
+            <p>COMMUNITY PRESS · v1.0</p>
+            <h1>MAKE A PAGE</h1>
         </div>
 
-        <div id="workArea"></div>
-
-        <div class="paper-mark paper-mark-one">✦</div>
-        <div class="paper-mark paper-mark-two">●</div>
+        <div id="canvasFrame">
+            <canvas id="pressCanvas"></canvas>
+        </div>
 
     </section>
 
-    <nav id="toolTray" aria-label="Publishing tools">
+    <nav id="toolTray" aria-label="Community Press tools">
 
         <button id="headlineButton" type="button">
+            <span aria-hidden="true">A</span>
             HEADLINE
         </button>
 
-        <button id="clearButton" type="button">
-            CLEAR
+        <button id="textButton" type="button">
+            <span aria-hidden="true">¶</span>
+            WORDS
+        </button>
+
+        <button id="photoButton" type="button">
+            <span aria-hidden="true">▣</span>
+            PHOTO
+        </button>
+
+        <button id="shapesButton" type="button">
+            <span aria-hidden="true">●</span>
+            SHAPES
+        </button>
+
+        <button id="drawButton" type="button">
+            <span aria-hidden="true">✎</span>
+            DRAW
+        </button>
+
+        <button id="undoButton" type="button">
+            <span aria-hidden="true">↶</span>
+            UNDO
+        </button>
+
+        <button id="deleteButton" type="button">
+            <span aria-hidden="true">×</span>
+            DELETE
         </button>
 
         <button id="printButton" type="button">
+            <span aria-hidden="true">▤</span>
             PRINT
         </button>
 
     </nav>
+
+    <section id="shapeTray" class="popoutTray hidden" aria-label="Shapes">
+
+        <button type="button" data-shape="circle" aria-label="Add circle">
+            ●
+        </button>
+
+        <button type="button" data-shape="square" aria-label="Add square">
+            ■
+        </button>
+
+        <button type="button" data-shape="triangle" aria-label="Add triangle">
+            ▲
+        </button>
+
+        <button type="button" data-shape="star" aria-label="Add star">
+            ★
+        </button>
+
+        <button type="button" data-shape="wing" aria-label="Add butterfly wing">
+            WING
+        </button>
+
+    </section>
+
+    <input
+        id="photoInput"
+        type="file"
+        accept="image/*"
+        hidden
+    >
 
 </main>
 
