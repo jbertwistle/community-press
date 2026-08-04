@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    >
+
     <title>Community Press</title>
 
     <link rel="stylesheet" href="style.css">
@@ -10,18 +15,44 @@
 
 <body>
 
-<header>
-    <h1>COMMUNITY PRESS</h1>
-    <p>Publish today's edition.</p>
-</header>
+<main id="press">
 
-<div id="toolbar">
-    <button id="headlineButton">
-        + Headline
-    </button>
-</div>
+    <section id="sheet" aria-label="Community Press one-sheet">
 
-<div id="page"></div>
+        <div class="masthead">
+            <p class="issue">COMMUNITY PRESS · ISSUE 0001</p>
+
+            <h1>WHAT WOULD YOU<br>LIKE TO PUBLISH?</h1>
+
+            <p class="instruction">
+                Touch the tools below. Move your words around the page.
+            </p>
+        </div>
+
+        <div id="workArea"></div>
+
+        <div class="paper-mark paper-mark-one">✦</div>
+        <div class="paper-mark paper-mark-two">●</div>
+
+    </section>
+
+    <nav id="toolTray" aria-label="Publishing tools">
+
+        <button id="headlineButton" type="button">
+            HEADLINE
+        </button>
+
+        <button id="clearButton" type="button">
+            CLEAR
+        </button>
+
+        <button id="printButton" type="button">
+            PRINT
+        </button>
+
+    </nav>
+
+</main>
 
 <script src="script.js"></script>
 
