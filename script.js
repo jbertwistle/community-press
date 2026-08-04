@@ -152,7 +152,14 @@ function connectButtons() {
 
         setStatus("waiting for image...");
         photoInput.click();
+        document
+    .querySelectorAll("#toolTray button, #shapeTray button")
+    .forEach(button => {
+        button.addEventListener("pointerdown", event => {
+            event.preventDefault();
+        });
     });
+    
 
     photoInput.addEventListener("change", addPhoto);
 
@@ -654,27 +661,40 @@ function keepObjectOnSheet(event) {
 -------------------------------------------------- */
 
 function deleteSelectedObject() {
-    const activeObjects = canvas.getActiveObjects();
+    stopDrawing();
+    closeShapeTray();
 
-    if (activeObjects.length === 0) {
+    const object =
+        canvas.getActiveObject() ||
+        lastSelectedObject;
+
+    if (!object) {
         setStatus("nothing selected");
         return;
     }
 
-    const objectCount = activeObjects.length;
+    /*
+     * An ActiveSelection contains several objects.
+     */
+    if (object.type === "activeSelection") {
+        const objects = [...object.getObjects()];
 
-    activeObjects.forEach(object => {
+        canvas.discardActiveObject();
+
+        objects.forEach(item => {
+            canvas.remove(item);
+        });
+
+        setStatus(`${objects.length} objects deleted`);
+    } else {
         canvas.remove(object);
-    });
+        setStatus("object deleted");
+    }
+
+    lastSelectedObject = null;
 
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-
-    setStatus(
-        objectCount === 1
-            ? "object deleted"
-            : `${objectCount} objects deleted`
-    );
 }
 
 /* --------------------------------------------------
@@ -736,7 +756,52 @@ async function undo() {
         restoringHistory = false;
     }
 }
+/* --------------------------------------------------
+   DUPLICATE
+-------------------------------------------------- */
 
+async function duplicateSelectedObject() {
+    stopDrawing();
+    closeShapeTray();
+
+    const original =
+        canvas.getActiveObject() ||
+        lastSelectedObject;
+
+    if (!original) {
+        setStatus("nothing selected");
+        return;
+    }
+
+    setStatus("duplicating...");
+
+    try {
+        const copy = await original.clone();
+
+        copy.set({
+            left: (original.left ?? 0) + 40,
+            top: (original.top ?? 0) + 40,
+            evented: true,
+            selectable: true
+        });
+
+        canvas.add(copy);
+
+        keepObjectOnSheet({
+            target: copy
+        });
+
+        canvas.setActiveObject(copy);
+        lastSelectedObject = copy;
+
+        canvas.requestRenderAll();
+
+        setStatus("object duplicated");
+    } catch (error) {
+        console.error("Duplicate failed:", error);
+        setStatus("duplicate failed");
+    }
+}
 /* --------------------------------------------------
    PRINT
 -------------------------------------------------- */
