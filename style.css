@@ -170,12 +170,14 @@ button {
 -------------------------------------------------- */
 
 #toolTray {
-    position: fixed;
+    position: sticky;
     z-index: 30;
 
-    left: 50%;
+    left: auto;
     bottom: 18px;
-    transform: translateX(-50%);
+    transform: none;
+
+    margin: 20px auto 0;
 
     width: min(1250px, calc(100% - 30px));
 
