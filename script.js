@@ -1295,9 +1295,10 @@ async function loadPublishedEditions() {
     const { data, error } =
         await supabaseClient
             .from("community_press_editions")
-            .select(
-                "id, created_at, image_path, report_count"
-            )
+            
+               .select(
+    "id, created_at, image_path, report_count, edition_number"
+)
             .eq("status", "published")
             .order(
                 "created_at",
@@ -1316,7 +1317,7 @@ async function loadPublishedEditions() {
     }
 
     publishedEditions =
-        data.map((row, index) => {
+       data.map(row => {
 
             const { data: publicURL } =
                 supabaseClient
@@ -1328,7 +1329,7 @@ async function loadPublishedEditions() {
 
             return {
                 id: row.id,
-                number: data.length - index,
+                number: row.edition_number,
                 image: publicURL.publicUrl,
                 imagePath: row.image_path,
                 publishedAt:
