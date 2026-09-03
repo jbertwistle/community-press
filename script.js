@@ -1443,7 +1443,10 @@ function closeEditionViewer() {
     activeEdition = null;
 
     document.body.style.overflow = "";
-    function printCurrentEdition() {
+}
+
+
+function printCurrentEdition() {
     if (!activeEdition) {
         return;
     }
