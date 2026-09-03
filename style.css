@@ -41,10 +41,13 @@ button {
     min-height: 100vh;
     position: relative;
 
-   padding:
-    clamp(20px, 3vw, 42px)
-    clamp(18px, 4vw, 64px)
-    280px;
+    padding:
+        clamp(20px, 3vw, 42px)
+        clamp(18px, 4vw, 64px)
+        40px;
+
+    /* rest stays the same */
+}
 
     background-color: var(--paper);
 
