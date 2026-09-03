@@ -8,7 +8,17 @@
  * The internal canvas stays at a fixed size.
  * CSS scales it to the available screen.
  */
+const SUPABASE_URL =
+    "https://nukcfktqqjsfzlxyknhl.supabase.co";
 
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_7A9kGf89X2ob6OUgt_UVJQ_2p1qDeB4";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
 const CANVAS_WIDTH = 1100;
 const CANVAS_HEIGHT = 1700;
 
