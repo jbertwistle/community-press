@@ -14,11 +14,7 @@ const SUPABASE_URL =
 const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_7A9kGf89X2ob6OUgt_UVJQ_2p1qDeB4";
 
-const supabaseClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY
-    );
+let supabaseClient = null;
 const CANVAS_WIDTH = 1100;
 const CANVAS_HEIGHT = 1700;
 
@@ -94,6 +90,30 @@ function startCommunityPress() {
         preserveObjectStacking: true,
         selection: true
     });
+
+    configureCanvas();
+    connectButtons();
+    saveHistory();
+
+    if (window.supabase) {
+        supabaseClient =
+            window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_PUBLISHABLE_KEY
+            );
+
+        loadPublishedEditions();
+    } else {
+        console.error(
+            "Supabase library did not load."
+        );
+
+        setStatus("archive unavailable");
+        return;
+    }
+
+    setStatus("status: ready");
+}
 
     configureCanvas();
     connectButtons();
