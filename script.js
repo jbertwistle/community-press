@@ -1137,16 +1137,20 @@ function resizeCanvasDisplay() {
     if (!canvas || !canvasFrame) {
         return;
     }
+ 
+   const displayWidth = canvasFrame.clientWidth;
+const displayHeight =
+    displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
 
-    canvas.setDimensions(
-        {
-            width: canvasFrame.clientWidth,
-            height: canvasFrame.clientHeight
-        },
-        {
-            cssOnly: true
-        }
-    );
+canvas.setDimensions(
+    {
+        width: displayWidth,
+        height: displayHeight
+    },
+    {
+        cssOnly: true
+    }
+);
 
     canvas.calcOffset();
     canvas.requestRenderAll();
