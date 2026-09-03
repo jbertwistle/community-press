@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
 
@@ -8,7 +9,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press v1.1</title>
+    <title>Community Press v1.4</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -20,12 +21,16 @@
 
 <main id="press">
 
+    <!-- ============================================
+         WORKSPACE
+    ============================================= -->
+
     <section id="sheet">
 
         <header id="machineHeader">
 
             <div class="machineIdentity">
-                <p>community_press · v1.1</p>
+                <p>community_press · v1.4</p>
                 <p>sheet: <span id="sheetNumber">00001</span></p>
             </div>
 
@@ -45,6 +50,11 @@
 
     </section>
 
+
+    <!-- ============================================
+         TOOL TRAY
+    ============================================= -->
+
     <nav id="toolTray" aria-label="Community Press tools">
 
         <button id="headlineButton" type="button">
@@ -58,9 +68,9 @@
         </button>
 
         <button id="talkButton" type="button">
-    <span aria-hidden="true">●</span>
-    TALK
-</button>
+            <span aria-hidden="true">●</span>
+            TALK
+        </button>
 
         <button id="photoButton" type="button">
             <span aria-hidden="true">▣</span>
@@ -93,11 +103,16 @@
         </button>
 
         <button id="publishButton" type="button">
-    <span aria-hidden="true">▤</span>
-    PUBLISH SHEET
-</button>
+            <span aria-hidden="true">▤</span>
+            PUBLISH SHEET
+        </button>
 
     </nav>
+
+
+    <!-- ============================================
+         SHAPE TRAY
+    ============================================= -->
 
     <section
         id="shapeTray"
@@ -105,45 +120,71 @@
         aria-label="Insert shape"
     >
 
-        <button type="button" data-shape="circle" aria-label="Insert circle">
+        <button
+            type="button"
+            data-shape="circle"
+            aria-label="Insert circle"
+        >
             ●
         </button>
 
-        <button type="button" data-shape="square" aria-label="Insert square">
+        <button
+            type="button"
+            data-shape="square"
+            aria-label="Insert square"
+        >
             ■
         </button>
 
-        <button type="button" data-shape="triangle" aria-label="Insert triangle">
+        <button
+            type="button"
+            data-shape="triangle"
+            aria-label="Insert triangle"
+        >
             ▲
         </button>
 
-        <button type="button" data-shape="star" aria-label="Insert star">
+        <button
+            type="button"
+            data-shape="star"
+            aria-label="Insert star"
+        >
             ★
         </button>
 
-        <button type="button" data-shape="wing" aria-label="Insert wing">
+        <button
+            type="button"
+            data-shape="wing"
+            aria-label="Insert wing"
+        >
             WING
         </button>
 
     </section>
 
+
+    <!-- ============================================
+         LATEST EDITIONS
+    ============================================= -->
+
     <section id="archive">
 
-    <p id="publicationNotice">
-        COMMUNITY PRESS IS MADE BY ITS READERS.
-        PUBLICATION DOES NOT IMPLY ENDORSEMENT.
-    </p>
+        <p id="publicationNotice">
+            COMMUNITY PRESS IS MADE BY ITS READERS.
+            PUBLICATION DOES NOT IMPLY ENDORSEMENT.
+        </p>
 
-    <div class="archiveHeader">
-        <span>LATEST EDITIONS</span>
-        <span id="editionCount">0 sheets</span>
-    </div>
+        <div class="archiveHeader">
+            <span>LATEST EDITIONS</span>
+            <span id="editionCount">0 sheets</span>
+        </div>
 
-    <div id="latestEditions"></div>
+        <div id="latestEditions"></div>
 
-</section>
+    </section>
 
-      </section>
+
+    <!-- Hidden image picker -->
 
     <input
         id="photoInput"
@@ -154,7 +195,11 @@
 
 </main>
 
-<!-- FULL-SIZE PUBLISHED SHEET VIEWER -->
+
+<!-- ==============================================
+     FULL-SIZE PUBLISHED SHEET VIEWER
+================================================ -->
+
 <div id="editionViewer" class="hidden">
 
     <div id="viewerPanel">
@@ -187,7 +232,8 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
+
+<!-- Community Press application -->
 <script src="script.js"></script>
 
 </body>
