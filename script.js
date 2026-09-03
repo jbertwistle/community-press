@@ -97,6 +97,7 @@ function startCommunityPress() {
 
     configureCanvas();
     connectButtons();
+    loadPublishedEditions();
     saveHistory();
 
     setStatus("status: ready");
@@ -1189,10 +1190,10 @@ function showStartupError(message) {
 
 /* --------------------------------------------------
    COMMUNITY PRESS v1.4
-   LOCAL PUBLISHING
+   PERSISTENT PUBLISHING
 -------------------------------------------------- */
 
-function publishCurrentSheet() {
+async function publishCurrentSheet() {
     stopDrawing();
     closeShapeTray();
 
@@ -1200,56 +1201,170 @@ function publishCurrentSheet() {
     canvas.requestRenderAll();
 
     setStatus("publishing sheet...");
+    publishButton.disabled = true;
 
-    /*
-     * Flatten the Fabric canvas into a PNG.
-     * Published editions contain pixels, not
-     * editable objects or executable content.
-     */
+    try {
+        /*
+         * Flatten the finished Fabric sheet into
+         * a PNG before anything leaves the editor.
+         */
+        const imageData = canvas.toDataURL({
+            format: "png",
+            multiplier: 1
+        });
 
-    const imageData = canvas.toDataURL({
-        format: "png",
-        multiplier: 1
-    });
+        const imageBlob =
+            await dataURLToBlob(imageData);
 
-    const edition = {
-        id: Date.now(),
-        number: publishedEditions.length + 1,
-        image: imageData,
-        publishedAt: new Date()
-    };
+        const fileName =
+            `edition-${Date.now()}-${crypto.randomUUID()}.png`;
 
-    publishedEditions.unshift(edition);
+        const filePath =
+            `editions/${fileName}`;
 
-    renderLatestEditions();
+        /*
+         * Upload flattened image.
+         */
+        const { error: uploadError } =
+            await supabaseClient
+                .storage
+                .from("community-press")
+                .upload(
+                    filePath,
+                    imageBlob,
+                    {
+                        contentType: "image/png",
+                        cacheControl: "3600",
+                        upsert: false
+                    }
+                );
 
-    setStatus(
-        `sheet ${String(edition.number).padStart(5, "0")} published`
-    );
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        /*
+         * Add publication to the archive database.
+         */
+        const { error: insertError } =
+            await supabaseClient
+                .from("community_press_editions")
+                .insert({
+                    image_path: filePath,
+                    status: "published"
+                });
+
+        if (insertError) {
+            throw insertError;
+        }
+
+        await loadPublishedEditions();
+
+        setStatus("sheet published");
+
+    } catch (error) {
+        console.error(
+            "Community Press publish failed:",
+            error
+        );
+
+        setStatus("publication failed");
+
+    } finally {
+        publishButton.disabled = false;
+    }
 }
 
+
+/* --------------------------------------------------
+   LOAD ARCHIVE
+-------------------------------------------------- */
+
+async function loadPublishedEditions() {
+    const { data, error } =
+        await supabaseClient
+            .from("community_press_editions")
+            .select(
+                "id, created_at, image_path, report_count"
+            )
+            .eq("status", "published")
+            .order(
+                "created_at",
+                { ascending: false }
+            )
+            .limit(50);
+
+    if (error) {
+        console.error(
+            "Could not load Community Press archive:",
+            error
+        );
+
+        setStatus("archive unavailable");
+        return;
+    }
+
+    publishedEditions =
+        data.map((row, index) => {
+
+            const { data: publicURL } =
+                supabaseClient
+                    .storage
+                    .from("community-press")
+                    .getPublicUrl(
+                        row.image_path
+                    );
+
+            return {
+                id: row.id,
+                number: data.length - index,
+                image: publicURL.publicUrl,
+                imagePath: row.image_path,
+                publishedAt:
+                    new Date(row.created_at),
+                reportCount:
+                    row.report_count ?? 0
+            };
+        });
+
+    renderLatestEditions();
+}
+
+
+/* --------------------------------------------------
+   RENDER LATEST EDITIONS
+-------------------------------------------------- */
 
 function renderLatestEditions() {
     latestEditions.innerHTML = "";
 
     publishedEditions.forEach(edition => {
-        const button = document.createElement("button");
+
+        const button =
+            document.createElement("button");
 
         button.type = "button";
-        button.className = "editionThumbnail";
+        button.className =
+            "editionThumbnail";
 
-        const image = document.createElement("img");
+        const image =
+            document.createElement("img");
 
         image.src = edition.image;
+
         image.alt =
             `Community Press edition ${edition.number}`;
 
-        const label = document.createElement("span");
+        const label =
+            document.createElement("span");
 
-        label.className = "editionNumber";
+        label.className =
+            "editionNumber";
 
         label.textContent =
-            `sheet: ${String(edition.number).padStart(5, "0")}`;
+            `sheet: ${String(
+                edition.number
+            ).padStart(5, "0")}`;
 
         button.appendChild(image);
         button.appendChild(label);
@@ -1262,31 +1377,49 @@ function renderLatestEditions() {
         latestEditions.appendChild(button);
     });
 
-    const count = publishedEditions.length;
+    const count =
+        publishedEditions.length;
 
     editionCount.textContent =
-        `${count} ${count === 1 ? "sheet" : "sheets"}`;
+        `${count} ${
+            count === 1
+                ? "sheet"
+                : "sheets"
+        }`;
 }
 
+
+/* --------------------------------------------------
+   EDITION VIEWER
+-------------------------------------------------- */
 
 function openEditionViewer(edition) {
     activeEdition = edition;
 
-    publishedSheet.src = edition.image;
+    publishedSheet.src =
+        edition.image;
 
-    downloadSheet.href = edition.image;
+    downloadSheet.href =
+        edition.image;
 
     downloadSheet.download =
-        `community-press-${String(edition.number).padStart(5, "0")}.png`;
+        `community-press-${String(
+            edition.number
+        ).padStart(5, "0")}.png`;
 
-    editionViewer.classList.remove("hidden");
+    editionViewer.classList.remove(
+        "hidden"
+    );
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+        "hidden";
 }
 
 
 function closeEditionViewer() {
-    editionViewer.classList.add("hidden");
+    editionViewer.classList.add(
+        "hidden"
+    );
 
     publishedSheet.src = "";
 
@@ -1296,18 +1429,33 @@ function closeEditionViewer() {
 }
 
 
+/* --------------------------------------------------
+   REPORT
+   Database reporting comes next.
+-------------------------------------------------- */
+
 function reportCurrentEdition() {
     if (!activeEdition) {
         return;
     }
 
-    setStatus(
-        `sheet ${String(activeEdition.number).padStart(5, "0")} reported`
-    );
-
-    reportSheet.textContent = "REPORTED";
+    reportSheet.textContent =
+        "REPORTING COMING NEXT";
 
     window.setTimeout(() => {
-        reportSheet.textContent = "REPORT";
+        reportSheet.textContent =
+            "REPORT";
     }, 1800);
+}
+
+
+/* --------------------------------------------------
+   DATA URL → BLOB
+-------------------------------------------------- */
+
+async function dataURLToBlob(dataURL) {
+    const response =
+        await fetch(dataURL);
+
+    return await response.blob();
 }
