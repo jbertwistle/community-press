@@ -336,55 +336,57 @@ button {
 -------------------------------------------------- */
 
 @media print {
+
     @page {
-        margin: 0;
         size: 11in 17in;
+        margin: 0;
     }
 
     html,
     body {
         width: 11in;
         height: 17in;
-
         margin: 0;
         padding: 0;
-
-        background: var(--paper);
-
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
+        background: white;
     }
 
-    #sheet {
-        width: 11in;
-        height: 17in;
-
-        min-height: 0;
-
-        margin: 0;
-        padding: 0;
-
-        background: var(--paper);
-    }
-
-    #machineHeader,
-    #toolTray,
-    #shapeTray,
-    #archive {
+    #press {
         display: none !important;
     }
 
-    #canvasFrame {
-        width: 11in;
-        height: 17in;
-        aspect-ratio: 11 / 17;
-
-        margin: 0;
-        border: none;
+    #editionViewer {
+        display: block !important;
+        position: static !important;
+        inset: auto !important;
+        width: 11in !important;
+        height: 17in !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        background: white !important;
     }
 
-    .upper-canvas {
-        display: none;
+    #viewerPanel {
+        width: 11in !important;
+        height: 17in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #publishedSheet {
+        display: block !important;
+        width: 11in !important;
+        height: 17in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        object-fit: contain;
+        box-shadow: none !important;
+    }
+
+    #closeViewer,
+    #viewerControls {
+        display: none !important;
     }
 }
 /* --------------------------------------------------
