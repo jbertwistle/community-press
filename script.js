@@ -22,6 +22,16 @@ const machineStatus = document.getElementById("machineStatus");
 const headlineButton = document.getElementById("headlineButton");
 const textButton = document.getElementById("textButton");
 const talkButton = document.getElementById("talkButton");
+const publishButton = document.getElementById("publishButton");
+
+const latestEditions = document.getElementById("latestEditions");
+const editionCount = document.getElementById("editionCount");
+
+const editionViewer = document.getElementById("editionViewer");
+const publishedSheet = document.getElementById("publishedSheet");
+const downloadSheet = document.getElementById("downloadSheet");
+const closeViewer = document.getElementById("closeViewer");
+const reportSheet = document.getElementById("reportSheet");
 const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
@@ -31,7 +41,7 @@ const duplicateButton =
     document.getElementById("duplicateButton");
 
 const deleteButton = document.getElementById("deleteButton");
-const printButton = document.getElementById("printButton");
+
 
 const shapeTray = document.getElementById("shapeTray");
 const photoInput = document.getElementById("photoInput");
@@ -47,6 +57,8 @@ let dictatedText = "";
 
 let history = [];
 let restoringHistory = false;
+let publishedEditions = [];
+let activeEdition = null;
 
 startCommunityPress();
 
@@ -205,10 +217,20 @@ talkButton.addEventListener(
         deleteSelectedObject
     );
 
-    printButton.addEventListener(
-        "click",
-        prepareAndPrint
-    );
+   publishButton.addEventListener(
+    "click",
+    publishCurrentSheet
+);
+
+closeViewer.addEventListener(
+    "click",
+    closeEditionViewer
+);
+
+reportSheet.addEventListener(
+    "click",
+    reportCurrentEdition
+);
 
     document.addEventListener("keydown", event => {
         const activeObject = canvas.getActiveObject();
@@ -1149,4 +1171,129 @@ function showStartupError(message) {
     errorBox.style.fontWeight = "bold";
 
     canvasFrame.appendChild(errorBox);
+}
+
+/* --------------------------------------------------
+   COMMUNITY PRESS v1.4
+   LOCAL PUBLISHING
+-------------------------------------------------- */
+
+function publishCurrentSheet() {
+    stopDrawing();
+    closeShapeTray();
+
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+
+    setStatus("publishing sheet...");
+
+    /*
+     * Flatten the Fabric canvas into a PNG.
+     * Published editions contain pixels, not
+     * editable objects or executable content.
+     */
+
+    const imageData = canvas.toDataURL({
+        format: "png",
+        multiplier: 1
+    });
+
+    const edition = {
+        id: Date.now(),
+        number: publishedEditions.length + 1,
+        image: imageData,
+        publishedAt: new Date()
+    };
+
+    publishedEditions.unshift(edition);
+
+    renderLatestEditions();
+
+    setStatus(
+        `sheet ${String(edition.number).padStart(5, "0")} published`
+    );
+}
+
+
+function renderLatestEditions() {
+    latestEditions.innerHTML = "";
+
+    publishedEditions.forEach(edition => {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.className = "editionThumbnail";
+
+        const image = document.createElement("img");
+
+        image.src = edition.image;
+        image.alt =
+            `Community Press edition ${edition.number}`;
+
+        const label = document.createElement("span");
+
+        label.className = "editionNumber";
+
+        label.textContent =
+            `sheet: ${String(edition.number).padStart(5, "0")}`;
+
+        button.appendChild(image);
+        button.appendChild(label);
+
+        button.addEventListener(
+            "click",
+            () => openEditionViewer(edition)
+        );
+
+        latestEditions.appendChild(button);
+    });
+
+    const count = publishedEditions.length;
+
+    editionCount.textContent =
+        `${count} ${count === 1 ? "sheet" : "sheets"}`;
+}
+
+
+function openEditionViewer(edition) {
+    activeEdition = edition;
+
+    publishedSheet.src = edition.image;
+
+    downloadSheet.href = edition.image;
+
+    downloadSheet.download =
+        `community-press-${String(edition.number).padStart(5, "0")}.png`;
+
+    editionViewer.classList.remove("hidden");
+
+    document.body.style.overflow = "hidden";
+}
+
+
+function closeEditionViewer() {
+    editionViewer.classList.add("hidden");
+
+    publishedSheet.src = "";
+
+    activeEdition = null;
+
+    document.body.style.overflow = "";
+}
+
+
+function reportCurrentEdition() {
+    if (!activeEdition) {
+        return;
+    }
+
+    setStatus(
+        `sheet ${String(activeEdition.number).padStart(5, "0")} reported`
+    );
+
+    reportSheet.textContent = "REPORTED";
+
+    window.setTimeout(() => {
+        reportSheet.textContent = "REPORT";
+    }, 1800);
 }
