@@ -41,10 +41,10 @@ button {
     min-height: 100vh;
     position: relative;
 
-    padding:
-        clamp(20px, 3vw, 42px)
-        clamp(18px, 4vw, 64px)
-        150px;
+   padding:
+    clamp(20px, 3vw, 42px)
+    clamp(18px, 4vw, 64px)
+    280px;
 
     background-color: var(--paper);
 
@@ -101,7 +101,8 @@ button {
 -------------------------------------------------- */
 
 #machineHeader {
-    width: min(650px, 88vw);
+   
+    width: min(500px, 72vw);
     margin: 0 auto 12px;
 
     position: relative;
@@ -139,9 +140,8 @@ button {
 -------------------------------------------------- */
 
 #canvasFrame {
-    width: min(650px, 88vw);
+    width: min(500px, 72vw);
     aspect-ratio: 11 / 17;
-
     margin: 0 auto 30px;
 
     position: relative;
@@ -392,7 +392,7 @@ button {
 
 #archive {
     width: min(1100px, 92vw);
-    margin: 70px auto 140px;
+    margin: 40px auto 220px;
 }
 
 #publicationNotice {
