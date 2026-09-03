@@ -1142,6 +1142,10 @@ function resizeCanvasDisplay() {
 const displayHeight =
     displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
 
+const displayWidth = canvasFrame.clientWidth;
+const displayHeight =
+    displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
+
 canvas.setDimensions(
     {
         width: displayWidth,
@@ -1151,10 +1155,6 @@ canvas.setDimensions(
         cssOnly: true
     }
 );
-
-    canvas.calcOffset();
-    canvas.requestRenderAll();
-}
 
 /* --------------------------------------------------
    STARTUP ERROR
