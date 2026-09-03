@@ -9,8 +9,8 @@
  * CSS scales it to the available screen.
  */
 
-const CANVAS_WIDTH = 1320;
-const CANVAS_HEIGHT = 820;
+const CANVAS_WIDTH = 1100;
+const CANVAS_HEIGHT = 1700;
 
 const SAFE_MARGIN = 28;
 
