@@ -115,13 +115,7 @@ function startCommunityPress() {
     setStatus("status: ready");
 }
 
-    configureCanvas();
-    connectButtons();
-    loadPublishedEditions();
-    saveHistory();
-
-    setStatus("status: ready");
-}
+  
 
 /* --------------------------------------------------
    CANVAS CONFIGURATION
