@@ -92,10 +92,10 @@
             DELETE
         </button>
 
-        <button id="printButton" type="button">
-            <span aria-hidden="true">▤</span>
-            PRINT
-        </button>
+        <button id="publishButton" type="button">
+    <span aria-hidden="true">▤</span>
+    PUBLISH SHEET
+</button>
 
     </nav>
 
@@ -127,6 +127,22 @@
 
     </section>
 
+    <section id="archive">
+
+    <p id="publicationNotice">
+        COMMUNITY PRESS IS MADE BY ITS READERS.
+        PUBLICATION DOES NOT IMPLY ENDORSEMENT.
+    </p>
+
+    <div class="archiveHeader">
+        <span>LATEST EDITIONS</span>
+        <span id="editionCount">0 sheets</span>
+    </div>
+
+    <div id="latestEditions"></div>
+
+</section>
+
     <input
         id="photoInput"
         type="file"
@@ -135,6 +151,47 @@
     >
 
 </main>
+
+        </main>
+
+    <!-- FULL-SIZE PUBLISHED SHEET VIEWER -->
+    <div id="editionViewer" class="hidden">
+
+        <div id="viewerPanel">
+
+            <button id="closeViewer" type="button">
+                CLOSE
+            </button>
+
+            <img
+                id="publishedSheet"
+                alt="Published Community Press sheet"
+            >
+
+            <div id="viewerControls">
+
+                <a
+                    id="downloadSheet"
+                    download="community-press.png"
+                >
+                    DOWNLOAD
+                </a>
+
+                <button id="reportSheet" type="button">
+                    REPORT
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
 
 <script src="script.js"></script>
 
