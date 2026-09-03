@@ -256,6 +256,7 @@ closeViewer.addEventListener(
 printSheet.addEventListener(
     "click",
     printCurrentEdition
+    
 );
 
     downloadSheet.addEventListener(
