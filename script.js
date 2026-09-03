@@ -1451,61 +1451,8 @@ function printCurrentEdition() {
         return;
     }
 
-    const printWindow = window.open("", "_blank");
-
-    if (!printWindow) {
-        setStatus("print window blocked");
-        return;
-    }
-
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Community Press</title>
-
-            <style>
-                @page {
-                    size: 11in 17in;
-                    margin: 0;
-                }
-
-                html,
-                body {
-                    margin: 0;
-                    padding: 0;
-                    width: 11in;
-                    height: 17in;
-                    background: white;
-                }
-
-                img {
-                    display: block;
-                    width: 11in;
-                    height: 17in;
-                    object-fit: contain;
-                }
-            </style>
-        </head>
-
-        <body>
-            <img
-                src="${activeEdition.image}"
-                alt="Community Press edition"
-            >
-        </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-
-    printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-    };
+    window.print();
 }
-
-
 
 /* --------------------------------------------------
    REPORT
