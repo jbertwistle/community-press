@@ -1450,7 +1450,59 @@ function printCurrentEdition() {
 
     window.print();
 }
+async function downloadCurrentEdition() {
+    if (!activeEdition) {
+        return;
+    }
 
+    setStatus("preparing download...");
+
+    try {
+        const response =
+            await fetch(activeEdition.image);
+
+        if (!response.ok) {
+            throw new Error(
+                `Download failed: ${response.status}`
+            );
+        }
+
+        const blob =
+            await response.blob();
+
+        const blobURL =
+            URL.createObjectURL(blob);
+
+        const link =
+            document.createElement("a");
+
+        link.href = blobURL;
+
+        link.download =
+            `community-press-${String(
+                activeEdition.number
+            ).padStart(5, "0")}.png`;
+
+        document.body.appendChild(link);
+
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => {
+            URL.revokeObjectURL(blobURL);
+        }, 1000);
+
+        setStatus("download ready");
+
+    } catch (error) {
+        console.error(
+            "Community Press download failed:",
+            error
+        );
+
+        setStatus("download failed");
+    }
+}
 /* --------------------------------------------------
    REPORT
    Database reporting comes next.
