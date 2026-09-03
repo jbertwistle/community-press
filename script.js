@@ -1148,25 +1148,22 @@ function resizeCanvasDisplay() {
     if (!canvas || !canvasFrame) {
         return;
     }
- 
-   const displayWidth = canvasFrame.clientWidth;
-const displayHeight =
-    displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
 
-const displayWidth = canvasFrame.clientWidth;
-const displayHeight =
-    displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
+    const displayWidth = canvasFrame.clientWidth;
 
-canvas.setDimensions(
-    {
-        width: displayWidth,
-        height: displayHeight
-    },
-    {
-        cssOnly: true
-    }
-);
+    const displayHeight =
+        displayWidth * (CANVAS_HEIGHT / CANVAS_WIDTH);
 
+    canvas.setDimensions(
+        {
+            width: displayWidth,
+            height: displayHeight
+        },
+        {
+            cssOnly: true
+        }
+    );
+}
 /* --------------------------------------------------
    STARTUP ERROR
 -------------------------------------------------- */
