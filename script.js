@@ -258,6 +258,11 @@ printSheet.addEventListener(
     printCurrentEdition
 );
 
+    downloadSheet.addEventListener(
+    "click",
+    downloadCurrentEdition
+);
+
 reportSheet.addEventListener(
     "click",
     reportCurrentEdition
@@ -1415,14 +1420,6 @@ function openEditionViewer(edition) {
 
     publishedSheet.src =
         edition.image;
-
-    downloadSheet.href =
-        edition.image;
-
-    downloadSheet.download =
-        `community-press-${String(
-            edition.number
-        ).padStart(5, "0")}.png`;
 
     editionViewer.classList.remove(
         "hidden"
