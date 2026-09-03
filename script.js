@@ -35,6 +35,7 @@ const editionCount = document.getElementById("editionCount");
 
 const editionViewer = document.getElementById("editionViewer");
 const publishedSheet = document.getElementById("publishedSheet");
+const printSheet = document.getElementById("printSheet");
 const downloadSheet = document.getElementById("downloadSheet");
 const closeViewer = document.getElementById("closeViewer");
 const reportSheet = document.getElementById("reportSheet");
@@ -252,11 +253,15 @@ closeViewer.addEventListener(
     closeEditionViewer
 );
 
+printSheet.addEventListener(
+    "click",
+    printCurrentEdition
+);
+
 reportSheet.addEventListener(
     "click",
     reportCurrentEdition
 );
-
     document.addEventListener("keydown", event => {
         const activeObject = canvas.getActiveObject();
 
