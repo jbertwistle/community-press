@@ -143,6 +143,8 @@
 
 </section>
 
+      </section>
+
     <input
         id="photoInput"
         type="file"
@@ -152,47 +154,40 @@
 
 </main>
 
-        </main>
+<!-- FULL-SIZE PUBLISHED SHEET VIEWER -->
+<div id="editionViewer" class="hidden">
 
-    <!-- FULL-SIZE PUBLISHED SHEET VIEWER -->
-    <div id="editionViewer" class="hidden">
+    <div id="viewerPanel">
 
-        <div id="viewerPanel">
+        <button id="closeViewer" type="button">
+            CLOSE
+        </button>
 
-            <button id="closeViewer" type="button">
-                CLOSE
-            </button>
+        <img
+            id="publishedSheet"
+            alt="Published Community Press sheet"
+        >
 
-            <img
-                id="publishedSheet"
-                alt="Published Community Press sheet"
+        <div id="viewerControls">
+
+            <a
+                id="downloadSheet"
+                download="community-press.png"
             >
+                DOWNLOAD
+            </a>
 
-            <div id="viewerControls">
-
-                <a
-                    id="downloadSheet"
-                    download="community-press.png"
-                >
-                    DOWNLOAD
-                </a>
-
-                <button id="reportSheet" type="button">
-                    REPORT
-                </button>
-
-            </div>
+            <button id="reportSheet" type="button">
+                REPORT
+            </button>
 
         </div>
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
-    <script src="script.js"></script>
+</div>
 
-</body>
-</html>
-
+<script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
 <script src="script.js"></script>
 
 </body>
