@@ -1509,18 +1509,40 @@ async function downloadCurrentEdition() {
    Database reporting comes next.
 -------------------------------------------------- */
 
-function reportCurrentEdition() {
+async function reportCurrentEdition() {
     if (!activeEdition) {
         return;
     }
 
-    reportSheet.textContent =
-        "REPORTING COMING NEXT";
+    reportSheet.disabled = true;
+    reportSheet.textContent = "REPORTING...";
 
-    window.setTimeout(() => {
-        reportSheet.textContent =
-            "REPORT";
-    }, 1800);
+    try {
+        const { error } =
+            await supabaseClient
+                .from("community_press_reports")
+                .insert({
+                    edition_id: activeEdition.id
+                });
+
+        if (error) {
+            throw error;
+        }
+
+        reportSheet.textContent = "REPORTED";
+        setStatus("report submitted");
+
+    } catch (error) {
+        console.error(
+            "Community Press report failed:",
+            error
+        );
+
+        reportSheet.textContent = "REPORT";
+        reportSheet.disabled = false;
+
+        setStatus("report failed");
+    }
 }
 
 
