@@ -29,6 +29,8 @@ const headlineButton = document.getElementById("headlineButton");
 const textButton = document.getElementById("textButton");
 const talkButton = document.getElementById("talkButton");
 const publishButton = document.getElementById("publishButton");
+const newSheet =
+    document.getElementById("newSheet");
 
 const latestEditions = document.getElementById("latestEditions");
 const editionCount = document.getElementById("editionCount");
@@ -181,6 +183,27 @@ canvas.on("selection:cleared", () => {
     resizeCanvasDisplay();
 }
 
+function startNewSheet() {
+    if (!canvas) {
+        return;
+    }
+
+    stopDrawing();
+    closeShapeTray();
+
+    canvas.discardActiveObject();
+    canvas.clear();
+
+    canvas.backgroundColor =
+        "rgba(255,255,255,0)";
+
+    canvas.requestRenderAll();
+
+    saveHistory();
+
+    setStatus("status: ready");
+}
+
 /* --------------------------------------------------
    BUTTONS
 -------------------------------------------------- */
@@ -193,6 +216,11 @@ function connectButtons() {
         .forEach(button => {
             button.addEventListener("pointerdown", event => {
                 event.preventDefault();
+
+                newSheet.addEventListener(
+    "click",
+    startNewSheet
+);
             });
         });
 
