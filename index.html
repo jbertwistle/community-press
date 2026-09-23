@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press v1.6</title>
+    <title>Community Press v1.7</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -30,7 +30,7 @@
         <header id="machineHeader">
 
             <div class="machineIdentity">
-                <p>community_press · v1.6</p>
+                <p>community_press · v1.7</p>
                 <p>sheet: <span id="sheetNumber">00001</span></p>
             </div>
 
@@ -227,6 +227,37 @@
             <button type="button" data-columns="1">1 COL</button>
             <button type="button" data-columns="2">2 COL</button>
             <button type="button" data-columns="3">3 COL</button>
+        </fieldset>
+
+        <fieldset class="articlePhotoControls">
+            <legend>ARTICLE PHOTO</legend>
+
+            <div class="articlePhotoPicker">
+                <button id="chooseArticlePhoto" type="button">
+                    CHOOSE PHOTO
+                </button>
+                <span id="articlePhotoStatus">no photo selected</span>
+            </div>
+
+            <input
+                id="articlePhotoInput"
+                type="file"
+                accept="image/*"
+                hidden
+            >
+
+            <img
+                id="articlePhotoPreview"
+                class="hidden"
+                alt="Selected article photograph"
+            >
+
+            <div class="photoPositionChoices">
+                <button type="button" data-photo-position="none">NO PHOTO</button>
+                <button type="button" data-photo-position="left">PHOTO LEFT</button>
+                <button type="button" data-photo-position="right">PHOTO RIGHT</button>
+                <button type="button" data-photo-position="across">PHOTO ACROSS</button>
+            </div>
         </fieldset>
 
         <div class="articleEditorActions">

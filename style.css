@@ -352,6 +352,7 @@ button {
 }
 
 .columnChoices button,
+.articlePhotoControls button,
 .articleEditorActions button {
     min-height: 48px;
     border: 2px solid var(--ink);
@@ -360,9 +361,56 @@ button {
     cursor: pointer;
 }
 
-.columnChoices button.active {
+.columnChoices button.active,
+.photoPositionChoices button.active {
     background: var(--ink);
     color: var(--paper-light);
+}
+
+.articlePhotoControls {
+    margin: 16px 0 0;
+    padding: 12px;
+    border: 2px solid var(--ink);
+}
+
+.articlePhotoControls legend {
+    padding: 0 6px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.articlePhotoPicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.articlePhotoPicker button {
+    padding: 8px 12px;
+}
+
+#articlePhotoStatus {
+    color: var(--faded-ink);
+    font-size: 14px;
+}
+
+#articlePhotoPreview {
+    display: block;
+    max-width: 180px;
+    max-height: 120px;
+    margin: 12px 0;
+    border: 1px solid var(--ink);
+}
+
+#articlePhotoPreview.hidden {
+    display: none;
+}
+
+.photoPositionChoices {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .articleEditorActions {
@@ -411,6 +459,10 @@ button {
 }
 
 @media (max-width: 560px) {
+    .photoPositionChoices {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     #machineHeader {
         display: block;
     }

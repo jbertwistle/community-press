@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * COMMUNITY PRESS v1.6
+ * COMMUNITY PRESS v1.7
  *
  * A public broadsheet-making surface.
  *
@@ -22,11 +22,17 @@ const ARTICLE_WIDTH = 900;
 const ARTICLE_GUTTER = 28;
 const ARTICLE_FONT_SIZE = 30;
 const ARTICLE_LINE_HEIGHT = 1.2;
+const ARTICLE_PHOTO_GAP = 24;
+const ARTICLE_SIDE_PHOTO_WIDTH = 340;
+const ARTICLE_SIDE_PHOTO_MAX_HEIGHT = 420;
+const ARTICLE_ACROSS_PHOTO_MAX_HEIGHT = 480;
 const ARTICLE_PROPERTIES = [
     "communityPressType",
     "articleText",
     "articleColumns",
-    "articleWidth"
+    "articleWidth",
+    "articleImageSource",
+    "articleImagePosition"
 ];
 
 const SAFE_MARGIN = 28;
@@ -57,6 +63,10 @@ const articleEditor = document.getElementById("articleEditor");
 const articleText = document.getElementById("articleText");
 const saveArticle = document.getElementById("saveArticle");
 const cancelArticle = document.getElementById("cancelArticle");
+const chooseArticlePhoto = document.getElementById("chooseArticlePhoto");
+const articlePhotoInput = document.getElementById("articlePhotoInput");
+const articlePhotoPreview = document.getElementById("articlePhotoPreview");
+const articlePhotoStatus = document.getElementById("articlePhotoStatus");
 const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
@@ -86,6 +96,8 @@ let publishedEditions = [];
 let activeEdition = null;
 let articleBeingEdited = null;
 let articleColumnCount = 2;
+let articleImageSource = "";
+let articleImagePosition = "none";
 
 startCommunityPress();
 
@@ -262,14 +274,25 @@ function connectButtons() {
 
     articleEditor.addEventListener("click", event => {
         const columnButton = event.target.closest("[data-columns]");
+        const photoPositionButton = event.target.closest(
+            "[data-photo-position]"
+        );
 
         if (columnButton) {
             setArticleColumnCount(Number(columnButton.dataset.columns));
+        }
+
+        if (photoPositionButton) {
+            setArticleImagePosition(photoPositionButton.dataset.photoPosition);
         }
     });
 
     saveArticle.addEventListener("click", saveArticleFromEditor);
     cancelArticle.addEventListener("click", closeArticleEditor);
+    chooseArticlePhoto.addEventListener("click", () => {
+        articlePhotoInput.click();
+    });
+    articlePhotoInput.addEventListener("change", loadArticlePhoto);
 
    
 
@@ -433,8 +456,13 @@ function addBodyText() {
 function openArticleEditor(article = null, initialText = "") {
     articleBeingEdited = isArticle(article) ? article : null;
     articleText.value = articleBeingEdited?.articleText || initialText;
+    articleImageSource = articleBeingEdited?.articleImageSource || "";
 
     setArticleColumnCount(articleBeingEdited?.articleColumns || 2);
+    setArticleImagePosition(
+        articleBeingEdited?.articleImagePosition || "none"
+    );
+    updateArticlePhotoPreview();
 
     saveArticle.textContent = articleBeingEdited
         ? "UPDATE ARTICLE"
@@ -450,6 +478,9 @@ function closeArticleEditor() {
     articleEditor.classList.add("hidden");
     articleBeingEdited = null;
     articleText.value = "";
+    articleImageSource = "";
+    articleImagePosition = "none";
+    articlePhotoInput.value = "";
     setStatus("status: ready");
 }
 
@@ -466,7 +497,69 @@ function setArticleColumnCount(columnCount) {
         });
 }
 
-function saveArticleFromEditor() {
+function setArticleImagePosition(position) {
+    const allowedPositions = ["none", "left", "right", "across"];
+    articleImagePosition = allowedPositions.includes(position)
+        ? position
+        : "none";
+
+    articleEditor
+        .querySelectorAll("[data-photo-position]")
+        .forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.photoPosition === articleImagePosition
+            );
+        });
+}
+
+function loadArticlePhoto(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        window.alert("Please choose an image file.");
+        articlePhotoInput.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => {
+        articleImageSource = reader.result;
+
+        if (articleImagePosition === "none") {
+            setArticleImagePosition("left");
+        }
+
+        updateArticlePhotoPreview();
+        setStatus("article photo ready");
+    });
+
+    reader.addEventListener("error", () => {
+        setStatus("article photo could not be read");
+    });
+
+    reader.readAsDataURL(file);
+}
+
+function updateArticlePhotoPreview() {
+    if (!articleImageSource) {
+        articlePhotoPreview.classList.add("hidden");
+        articlePhotoPreview.removeAttribute("src");
+        articlePhotoStatus.textContent = "no photo selected";
+        return;
+    }
+
+    articlePhotoPreview.src = articleImageSource;
+    articlePhotoPreview.classList.remove("hidden");
+    articlePhotoStatus.textContent = "photo selected";
+}
+
+async function saveArticleFromEditor() {
     const sourceText = articleText.value.trim();
 
     if (!sourceText) {
@@ -475,23 +568,59 @@ function saveArticleFromEditor() {
         return;
     }
 
-    if (articleBeingEdited) {
-        replaceArticle(
-            articleBeingEdited,
-            sourceText,
-            articleColumnCount
-        );
-    } else {
-        addArticle(sourceText, articleColumnCount);
-    }
+    const effectiveImagePosition = articleImageSource
+        ? articleImagePosition
+        : "none";
 
-    articleEditor.classList.add("hidden");
-    articleBeingEdited = null;
-    articleText.value = "";
+    saveArticle.disabled = true;
+    setStatus("laying out article...");
+
+    try {
+        if (articleBeingEdited) {
+            await replaceArticle(
+                articleBeingEdited,
+                sourceText,
+                articleColumnCount,
+                articleImageSource,
+                effectiveImagePosition
+            );
+        } else {
+            await addArticle(
+                sourceText,
+                articleColumnCount,
+                {},
+                articleImageSource,
+                effectiveImagePosition
+            );
+        }
+
+        articleEditor.classList.add("hidden");
+        articleBeingEdited = null;
+        articleText.value = "";
+        articleImageSource = "";
+        articleImagePosition = "none";
+        articlePhotoInput.value = "";
+    } catch (error) {
+        console.error("Article layout failed:", error);
+        setStatus("article layout failed");
+    } finally {
+        saveArticle.disabled = false;
+    }
 }
 
-function addArticle(sourceText, columnCount = 2, placement = {}) {
-    const article = createArticleGroup(sourceText, columnCount);
+async function addArticle(
+    sourceText,
+    columnCount = 2,
+    placement = {},
+    imageSource = "",
+    imagePosition = "none"
+) {
+    const article = await createArticleGroup(
+        sourceText,
+        columnCount,
+        imageSource,
+        imagePosition
+    );
 
     article.set({
         left: placement.left ?? 100,
@@ -511,12 +640,22 @@ function addArticle(sourceText, columnCount = 2, placement = {}) {
 
     lastSelectedObject = article;
     canvas.requestRenderAll();
-    setStatus(`${columnCount}-column article inserted`);
+    setStatus(
+        imageSource && imagePosition !== "none"
+            ? `${columnCount}-column photo article inserted`
+            : `${columnCount}-column article inserted`
+    );
 
     return article;
 }
 
-function replaceArticle(article, sourceText, columnCount) {
+async function replaceArticle(
+    article,
+    sourceText,
+    columnCount,
+    imageSource,
+    imagePosition
+) {
     const placement = {
         left: article.left,
         top: article.top,
@@ -528,13 +667,45 @@ function replaceArticle(article, sourceText, columnCount) {
 
     canvas.remove(article);
 
-    const replacement = addArticle(sourceText, columnCount, placement);
+    const replacement = await addArticle(
+        sourceText,
+        columnCount,
+        placement,
+        imageSource,
+        imagePosition
+    );
     keepObjectOnSheet({ target: replacement });
     setStatus("article updated");
 }
 
-function createArticleGroup(sourceText, columnCount) {
+async function createArticleGroup(
+    sourceText,
+    columnCount,
+    imageSource = "",
+    imagePosition = "none"
+) {
     const safeColumnCount = Math.min(3, Math.max(1, columnCount));
+    const safeImagePosition = imageSource
+        ? imagePosition
+        : "none";
+
+    if (safeImagePosition === "left" || safeImagePosition === "right") {
+        return createSidePhotoArticle(
+            sourceText,
+            safeColumnCount,
+            imageSource,
+            safeImagePosition
+        );
+    }
+
+    if (safeImagePosition === "across") {
+        return createAcrossPhotoArticle(
+            sourceText,
+            safeColumnCount,
+            imageSource
+        );
+    }
+
     const columnWidth =
         (ARTICLE_WIDTH - ARTICLE_GUTTER * (safeColumnCount - 1)) /
         safeColumnCount;
@@ -553,7 +724,7 @@ function createArticleGroup(sourceText, columnCount) {
             fontFamily: "Georgia",
             fontSize: ARTICLE_FONT_SIZE,
             lineHeight: ARTICLE_LINE_HEIGHT,
-            splitByGrapheme: true
+            splitByGrapheme: true,
             fill: "#171611",
             editable: false,
             selectable: false,
@@ -566,9 +737,214 @@ function createArticleGroup(sourceText, columnCount) {
         articleText: sourceText,
         articleColumns: safeColumnCount,
         articleWidth: ARTICLE_WIDTH,
+        articleImageSource: "",
+        articleImagePosition: "none",
         subTargetCheck: false,
         objectCaching: false
     });
+}
+
+async function createSidePhotoArticle(
+    sourceText,
+    columnCount,
+    imageSource,
+    imagePosition
+) {
+    const image = await loadFabricImage(imageSource);
+    scaleImageToFit(
+        image,
+        ARTICLE_SIDE_PHOTO_WIDTH,
+        ARTICLE_SIDE_PHOTO_MAX_HEIGHT
+    );
+
+    const imageWidth = image.getScaledWidth();
+    const imageHeight = image.getScaledHeight();
+    const sideTextWidth = ARTICLE_WIDTH - imageWidth - ARTICLE_PHOTO_GAP;
+
+    const { fittingText, remainingText } = splitTextForHeight(
+        sourceText,
+        sideTextWidth,
+        imageHeight
+    );
+
+    const objects = [];
+    const imageLeft = imagePosition === "left"
+        ? 0
+        : ARTICLE_WIDTH - imageWidth;
+    const sideTextLeft = imagePosition === "left"
+        ? imageWidth + ARTICLE_PHOTO_GAP
+        : 0;
+
+    image.set({
+        left: imageLeft,
+        top: 0,
+        selectable: false,
+        evented: false
+    });
+    objects.push(image);
+
+    if (fittingText) {
+        objects.push(createArticleTextbox(
+            fittingText,
+            sideTextLeft,
+            0,
+            sideTextWidth
+        ));
+    }
+
+    if (remainingText) {
+        const belowTop = imageHeight + ARTICLE_PHOTO_GAP;
+        objects.push(...createColumnTextboxes(
+            remainingText,
+            columnCount,
+            belowTop
+        ));
+    }
+
+    return createArticleFabricGroup(
+        objects,
+        sourceText,
+        columnCount,
+        imageSource,
+        imagePosition
+    );
+}
+
+async function createAcrossPhotoArticle(
+    sourceText,
+    columnCount,
+    imageSource
+) {
+    const image = await loadFabricImage(imageSource);
+    scaleImageToFit(
+        image,
+        ARTICLE_WIDTH,
+        ARTICLE_ACROSS_PHOTO_MAX_HEIGHT
+    );
+
+    image.set({
+        left: (ARTICLE_WIDTH - image.getScaledWidth()) / 2,
+        top: 0,
+        selectable: false,
+        evented: false
+    });
+
+    const columnTop = image.getScaledHeight() + ARTICLE_PHOTO_GAP;
+    const objects = [
+        image,
+        ...createColumnTextboxes(sourceText, columnCount, columnTop)
+    ];
+
+    return createArticleFabricGroup(
+        objects,
+        sourceText,
+        columnCount,
+        imageSource,
+        "across"
+    );
+}
+
+function createColumnTextboxes(sourceText, columnCount, top = 0) {
+    const columnWidth =
+        (ARTICLE_WIDTH - ARTICLE_GUTTER * (columnCount - 1)) /
+        columnCount;
+    const columnTexts = splitTextIntoColumns(
+        sourceText,
+        columnCount,
+        columnWidth
+    );
+
+    return columnTexts
+        .filter(Boolean)
+        .map((columnText, index) => createArticleTextbox(
+            columnText,
+            index * (columnWidth + ARTICLE_GUTTER),
+            top,
+            columnWidth
+        ));
+}
+
+function createArticleTextbox(sourceText, left, top, width) {
+    return new fabric.Textbox(sourceText, {
+        left,
+        top,
+        width,
+        fontFamily: "Georgia",
+        fontSize: ARTICLE_FONT_SIZE,
+        lineHeight: ARTICLE_LINE_HEIGHT,
+        splitByGrapheme: true,
+        fill: "#171611",
+        editable: false,
+        selectable: false,
+        evented: false
+    });
+}
+
+function createArticleFabricGroup(
+    objects,
+    sourceText,
+    columnCount,
+    imageSource,
+    imagePosition
+) {
+    return new fabric.Group(objects, {
+        communityPressType: "article",
+        articleText: sourceText,
+        articleColumns: columnCount,
+        articleWidth: ARTICLE_WIDTH,
+        articleImageSource: imageSource,
+        articleImagePosition: imagePosition,
+        subTargetCheck: false,
+        objectCaching: false
+    });
+}
+
+async function loadFabricImage(imageSource) {
+    return fabric.FabricImage.fromURL(imageSource, {
+        crossOrigin: "anonymous"
+    });
+}
+
+function scaleImageToFit(image, maximumWidth, maximumHeight) {
+    const scale = Math.min(
+        maximumWidth / image.width,
+        maximumHeight / image.height
+    );
+
+    image.set({
+        scaleX: scale,
+        scaleY: scale
+    });
+}
+
+function splitTextForHeight(sourceText, width, maximumHeight) {
+    const tokens = sourceText.match(/\S+\s*/g) || [];
+
+    if (!tokens.length) {
+        return { fittingText: "", remainingText: "" };
+    }
+
+    let low = 1;
+    let high = tokens.length;
+    let best = 0;
+
+    while (low <= high) {
+        const middle = Math.floor((low + high) / 2);
+        const candidate = tokens.slice(0, middle).join("").trim();
+        const height = measureArticleTextHeight(candidate, width);
+
+        if (height <= maximumHeight) {
+            best = middle;
+            low = middle + 1;
+        } else {
+            high = middle - 1;
+        }
+    }
+
+    return {
+        fittingText: tokens.slice(0, best).join("").trim(),
+        remainingText: tokens.slice(best).join("").trim()
+    };
 }
 
 function splitTextIntoColumns(sourceText, columnCount, columnWidth) {
@@ -619,7 +995,8 @@ function measureArticleTextHeight(sourceText, width) {
         width,
         fontFamily: "Georgia",
         fontSize: ARTICLE_FONT_SIZE,
-        lineHeight: ARTICLE_LINE_HEIGHT
+        lineHeight: ARTICLE_LINE_HEIGHT,
+        splitByGrapheme: true
     });
 
     return measurement.height || ARTICLE_FONT_SIZE;
@@ -770,9 +1147,14 @@ function stopSpeechRecognition() {
     speechRecognition.stop();
 }
 
-function insertDictatedText(textValue) {
-    addArticle(textValue, 2);
-    setStatus("speech inserted as 2-column article");
+async function insertDictatedText(textValue) {
+    try {
+        await addArticle(textValue, 2);
+        setStatus("speech inserted as 2-column article");
+    } catch (error) {
+        console.error("Speech article layout failed:", error);
+        setStatus("speech article failed");
+    }
 }
 /* --------------------------------------------------
    IMAGE IMPORT
@@ -1249,7 +1631,9 @@ async function duplicateSelectedObject() {
                 communityPressType: original.communityPressType,
                 articleText: original.articleText,
                 articleColumns: original.articleColumns,
-                articleWidth: original.articleWidth
+                articleWidth: original.articleWidth,
+                articleImageSource: original.articleImageSource,
+                articleImagePosition: original.articleImagePosition
             });
         }
 

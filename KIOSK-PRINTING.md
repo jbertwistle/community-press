@@ -1,6 +1,6 @@
 # Community Press kiosk printing
 
-Community Press v1.6 publishes each sheet to the existing Supabase archive and
+Community Press v1.7 publishes each sheet to the existing Supabase archive and
 then prints the same flattened image on an 11 × 17 inch portrait page.
 
 ## Printer setup
