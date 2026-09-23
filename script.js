@@ -553,6 +553,7 @@ function createArticleGroup(sourceText, columnCount) {
             fontFamily: "Georgia",
             fontSize: ARTICLE_FONT_SIZE,
             lineHeight: ARTICLE_LINE_HEIGHT,
+            splitByGrapheme: true
             fill: "#171611",
             editable: false,
             selectable: false,
