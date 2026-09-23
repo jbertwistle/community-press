@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * COMMUNITY PRESS v1.1
+ * COMMUNITY PRESS v1.5
  *
  * A public broadsheet-making surface.
  *
@@ -17,6 +17,7 @@ const SUPABASE_PUBLISHABLE_KEY =
 let supabaseClient = null;
 const CANVAS_WIDTH = 1100;
 const CANVAS_HEIGHT = 1700;
+const PRINT_MULTIPLIER = 2;
 
 const SAFE_MARGIN = 28;
 
@@ -41,6 +42,7 @@ const printSheet = document.getElementById("printSheet");
 const downloadSheet = document.getElementById("downloadSheet");
 const closeViewer = document.getElementById("closeViewer");
 const reportSheet = document.getElementById("reportSheet");
+const printImage = document.getElementById("printImage");
 const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
@@ -1133,13 +1135,76 @@ function prepareAndPrint() {
     canvas.discardActiveObject();
     canvas.requestRenderAll();
 
-    setStatus("preparing print...");
+    const imageData = canvas.toDataURL({
+        format: "png",
+        multiplier: PRINT_MULTIPLIER
+    });
 
-    window.setTimeout(() => {
-        window.print();
+    printPreparedSheet(imageData).catch(error => {
+        console.error("Community Press print failed:", error);
+        setStatus("print failed");
+    });
+}
 
-        setStatus("print command sent");
-    }, 120);
+async function printPreparedSheet(imageSource) {
+    setStatus("preparing 11 × 17 print...");
+
+    await loadPrintImage(imageSource);
+
+    setStatus("sending sheet to printer...");
+
+    /*
+     * In an ordinary browser this opens the normal print dialogue.
+     * Chrome/Edge launched with --kiosk-printing sends it directly
+     * to the computer's default printer.
+     */
+    await nextPaint();
+    await nextPaint();
+    window.print();
+
+    setStatus("print command sent");
+}
+
+function loadPrintImage(imageSource) {
+    return new Promise((resolve, reject) => {
+        const onLoad = async () => {
+            cleanup();
+
+            try {
+                if (typeof printImage.decode === "function") {
+                    await printImage.decode();
+                }
+            } catch (error) {
+                /* The load event already confirms the image is usable. */
+            }
+
+            resolve();
+        };
+
+        const onError = () => {
+            cleanup();
+            reject(new Error("The printable sheet could not be prepared."));
+        };
+
+        const cleanup = () => {
+            printImage.removeEventListener("load", onLoad);
+            printImage.removeEventListener("error", onError);
+        };
+
+        printImage.addEventListener("load", onLoad, { once: true });
+        printImage.addEventListener("error", onError, { once: true });
+        printImage.src = imageSource;
+
+        if (printImage.complete && printImage.naturalWidth > 0) {
+            onLoad();
+        }
+    });
+}
+
+function nextPaint() {
+    return new Promise(resolve => {
+        window.requestAnimationFrame(resolve);
+    });
 }
 
 /* --------------------------------------------------
@@ -1260,7 +1325,7 @@ async function publishCurrentSheet() {
          */
         const imageData = canvas.toDataURL({
             format: "png",
-            multiplier: 1
+            multiplier: PRINT_MULTIPLIER
         });
 
         const imageBlob =
@@ -1310,7 +1375,18 @@ async function publishCurrentSheet() {
 
         await loadPublishedEditions();
 
-        setStatus("sheet published");
+        setStatus("sheet published · preparing print...");
+
+        try {
+            await printPreparedSheet(imageData);
+        } catch (printError) {
+            console.error(
+                "Community Press print failed:",
+                printError
+            );
+
+            setStatus("sheet published · print failed");
+        }
 
     } catch (error) {
         console.error(
@@ -1472,12 +1548,17 @@ function closeEditionViewer() {
 }
 
 
-function printCurrentEdition() {
+async function printCurrentEdition() {
     if (!activeEdition) {
         return;
     }
 
-    window.print();
+    try {
+        await printPreparedSheet(activeEdition.image);
+    } catch (error) {
+        console.error("Community Press print failed:", error);
+        setStatus("print failed");
+    }
 }
 async function downloadCurrentEdition() {
     if (!activeEdition) {

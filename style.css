@@ -335,6 +335,10 @@ button {
    PRINT
 -------------------------------------------------- */
 
+#printStage {
+    display: none;
+}
+
 @media print {
 
     @page {
@@ -351,30 +355,21 @@ button {
         background: white;
     }
 
-    #press {
+    body > * {
         display: none !important;
     }
 
-    #editionViewer {
+    #printStage {
         display: block !important;
         position: static !important;
-        inset: auto !important;
         width: 11in !important;
         height: 17in !important;
-        padding: 0 !important;
         margin: 0 !important;
-        overflow: visible !important;
+        padding: 0 !important;
         background: white !important;
     }
 
-    #viewerPanel {
-        width: 11in !important;
-        height: 17in !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    #publishedSheet {
+    #printImage {
         display: block !important;
         width: 11in !important;
         height: 17in !important;
@@ -382,11 +377,6 @@ button {
         padding: 0 !important;
         object-fit: contain;
         box-shadow: none !important;
-    }
-
-    #closeViewer,
-    #viewerControls {
-        display: none !important;
     }
 }
 /* --------------------------------------------------

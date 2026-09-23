@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press v1.4</title>
+    <title>Community Press v1.5</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -30,7 +30,7 @@
         <header id="machineHeader">
 
             <div class="machineIdentity">
-                <p>community_press · v1.4</p>
+                <p>community_press · v1.5</p>
                 <p>sheet: <span id="sheetNumber">00001</span></p>
             </div>
 
@@ -108,7 +108,7 @@
 
         <button id="publishButton" type="button">
             <span aria-hidden="true">▤</span>
-            PUBLISH SHEET
+            PUBLISH &amp; PRINT
         </button>
 
     </nav>
@@ -234,6 +234,14 @@
 
 </div>
 
+</div>
+
+<!-- The only element exposed to the printer. -->
+<div id="printStage" aria-hidden="true">
+    <img
+        id="printImage"
+        alt=""
+    >
 </div>
 
 
