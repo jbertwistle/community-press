@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     >
 
-    <title>Community Press v1.5</title>
+    <title>Community Press v1.6</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -30,7 +30,7 @@
         <header id="machineHeader">
 
             <div class="machineIdentity">
-                <p>community_press · v1.5</p>
+                <p>community_press · v1.6</p>
                 <p>sheet: <span id="sheetNumber">00001</span></p>
             </div>
 
@@ -198,6 +198,43 @@
     >
 
 </main>
+
+<!-- ==============================================
+     ARTICLE EDITOR
+================================================ -->
+
+<div id="articleEditor" class="articleEditor hidden">
+    <section
+        class="articleEditorPanel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="articleEditorTitle"
+    >
+        <header class="articleEditorHeader">
+            <h2 id="articleEditorTitle">ARTICLE</h2>
+            <p>Write once. Flow into columns.</p>
+        </header>
+
+        <label for="articleText">ARTICLE TEXT</label>
+        <textarea
+            id="articleText"
+            rows="12"
+            placeholder="Type or dictate an article."
+        ></textarea>
+
+        <fieldset class="columnChoices">
+            <legend>COLUMNS</legend>
+            <button type="button" data-columns="1">1 COL</button>
+            <button type="button" data-columns="2">2 COL</button>
+            <button type="button" data-columns="3">3 COL</button>
+        </fieldset>
+
+        <div class="articleEditorActions">
+            <button id="cancelArticle" type="button">CANCEL</button>
+            <button id="saveArticle" type="button">PLACE ARTICLE</button>
+        </div>
+    </section>
+</div>
 
 
 <!-- ==============================================

@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * COMMUNITY PRESS v1.5
+ * COMMUNITY PRESS v1.6
  *
  * A public broadsheet-making surface.
  *
@@ -18,6 +18,16 @@ let supabaseClient = null;
 const CANVAS_WIDTH = 1100;
 const CANVAS_HEIGHT = 1700;
 const PRINT_MULTIPLIER = 2;
+const ARTICLE_WIDTH = 900;
+const ARTICLE_GUTTER = 28;
+const ARTICLE_FONT_SIZE = 30;
+const ARTICLE_LINE_HEIGHT = 1.2;
+const ARTICLE_PROPERTIES = [
+    "communityPressType",
+    "articleText",
+    "articleColumns",
+    "articleWidth"
+];
 
 const SAFE_MARGIN = 28;
 
@@ -43,6 +53,10 @@ const downloadSheet = document.getElementById("downloadSheet");
 const closeViewer = document.getElementById("closeViewer");
 const reportSheet = document.getElementById("reportSheet");
 const printImage = document.getElementById("printImage");
+const articleEditor = document.getElementById("articleEditor");
+const articleText = document.getElementById("articleText");
+const saveArticle = document.getElementById("saveArticle");
+const cancelArticle = document.getElementById("cancelArticle");
 const photoButton = document.getElementById("photoButton");
 const shapesButton = document.getElementById("shapesButton");
 const drawButton = document.getElementById("drawButton");
@@ -70,6 +84,8 @@ let history = [];
 let restoringHistory = false;
 let publishedEditions = [];
 let activeEdition = null;
+let articleBeingEdited = null;
+let articleColumnCount = 2;
 
 startCommunityPress();
 
@@ -95,6 +111,15 @@ function startCommunityPress() {
         preserveObjectStacking: true,
         selection: true
     });
+
+    if (fabric.FabricObject) {
+        fabric.FabricObject.customProperties = [
+            ...new Set([
+                ...(fabric.FabricObject.customProperties || []),
+                ...ARTICLE_PROPERTIES
+            ])
+        ];
+    }
 
     configureCanvas();
     connectButtons();
@@ -180,6 +205,12 @@ canvas.on("selection:cleared", () => {
     }
 });
 
+    canvas.on("mouse:dblclick", event => {
+        if (isArticle(event.target)) {
+            openArticleEditor(event.target);
+        }
+    });
+
     window.addEventListener("resize", resizeCanvasDisplay);
 
     resizeCanvasDisplay();
@@ -228,6 +259,17 @@ function connectButtons() {
 
     headlineButton.addEventListener("click", addHeadline);
     textButton.addEventListener("click", addBodyText);
+
+    articleEditor.addEventListener("click", event => {
+        const columnButton = event.target.closest("[data-columns]");
+
+        if (columnButton) {
+            setArticleColumnCount(Number(columnButton.dataset.columns));
+        }
+    });
+
+    saveArticle.addEventListener("click", saveArticleFromEditor);
+    cancelArticle.addEventListener("click", closeArticleEditor);
 
    
 
@@ -299,6 +341,14 @@ reportSheet.addEventListener(
     reportCurrentEdition
 );
     document.addEventListener("keydown", event => {
+        if (event.target.matches("input, textarea")) {
+            if (event.key === "Escape") {
+                closeArticleEditor();
+            }
+
+            return;
+        }
+
         const activeObject = canvas.getActiveObject();
 
         if (
@@ -377,39 +427,205 @@ function addBodyText() {
     stopDrawing();
     closeShapeTray();
 
-    const text = new fabric.Textbox(
-        "Type or write something here.",
-        {
-            left: 100,
-            top: 220,
+    openArticleEditor();
+}
 
-            width: 690,
+function openArticleEditor(article = null, initialText = "") {
+    articleBeingEdited = isArticle(article) ? article : null;
+    articleText.value = articleBeingEdited?.articleText || initialText;
 
-            fontFamily: "Georgia",
-            fontSize: 36,
-            lineHeight: 1.18,
+    setArticleColumnCount(articleBeingEdited?.articleColumns || 2);
 
-            fill: "#171611",
+    saveArticle.textContent = articleBeingEdited
+        ? "UPDATE ARTICLE"
+        : "PLACE ARTICLE";
 
-            editable: true,
+    articleEditor.classList.remove("hidden");
+    articleText.focus();
 
-            opacity: 0
-        }
+    setStatus(articleBeingEdited ? "editing article" : "composing article");
+}
+
+function closeArticleEditor() {
+    articleEditor.classList.add("hidden");
+    articleBeingEdited = null;
+    articleText.value = "";
+    setStatus("status: ready");
+}
+
+function setArticleColumnCount(columnCount) {
+    articleColumnCount = Math.min(3, Math.max(1, columnCount));
+
+    articleEditor
+        .querySelectorAll("[data-columns]")
+        .forEach(button => {
+            button.classList.toggle(
+                "active",
+                Number(button.dataset.columns) === articleColumnCount
+            );
+        });
+}
+
+function saveArticleFromEditor() {
+    const sourceText = articleText.value.trim();
+
+    if (!sourceText) {
+        setStatus("article needs words");
+        articleText.focus();
+        return;
+    }
+
+    if (articleBeingEdited) {
+        replaceArticle(
+            articleBeingEdited,
+            sourceText,
+            articleColumnCount
+        );
+    } else {
+        addArticle(sourceText, articleColumnCount);
+    }
+
+    articleEditor.classList.add("hidden");
+    articleBeingEdited = null;
+    articleText.value = "";
+}
+
+function addArticle(sourceText, columnCount = 2, placement = {}) {
+    const article = createArticleGroup(sourceText, columnCount);
+
+    article.set({
+        left: placement.left ?? 100,
+        top: placement.top ?? 220,
+        angle: placement.angle ?? 0,
+        scaleX: placement.scaleX ?? 1,
+        scaleY: placement.scaleY ?? 1,
+        opacity: placement.opacity ?? 0
+    });
+
+    canvas.add(article);
+    canvas.setActiveObject(article);
+
+    if (placement.opacity === undefined) {
+        animateObjectArrival(article, placement.top ?? 220);
+    }
+
+    lastSelectedObject = article;
+    canvas.requestRenderAll();
+    setStatus(`${columnCount}-column article inserted`);
+
+    return article;
+}
+
+function replaceArticle(article, sourceText, columnCount) {
+    const placement = {
+        left: article.left,
+        top: article.top,
+        angle: article.angle,
+        scaleX: article.scaleX,
+        scaleY: article.scaleY,
+        opacity: 1
+    };
+
+    canvas.remove(article);
+
+    const replacement = addArticle(sourceText, columnCount, placement);
+    keepObjectOnSheet({ target: replacement });
+    setStatus("article updated");
+}
+
+function createArticleGroup(sourceText, columnCount) {
+    const safeColumnCount = Math.min(3, Math.max(1, columnCount));
+    const columnWidth =
+        (ARTICLE_WIDTH - ARTICLE_GUTTER * (safeColumnCount - 1)) /
+        safeColumnCount;
+
+    const columnTexts = splitTextIntoColumns(
+        sourceText,
+        safeColumnCount,
+        columnWidth
     );
 
-    canvas.add(text);
-    canvas.setActiveObject(text);
+    const columns = columnTexts.map((columnText, index) => {
+        return new fabric.Textbox(columnText, {
+            left: index * (columnWidth + ARTICLE_GUTTER),
+            top: 0,
+            width: columnWidth,
+            fontFamily: "Georgia",
+            fontSize: ARTICLE_FONT_SIZE,
+            lineHeight: ARTICLE_LINE_HEIGHT,
+            fill: "#171611",
+            editable: false,
+            selectable: false,
+            evented: false
+        });
+    });
 
-    animateObjectArrival(text, 220);
+    return new fabric.Group(columns, {
+        communityPressType: "article",
+        articleText: sourceText,
+        articleColumns: safeColumnCount,
+        articleWidth: ARTICLE_WIDTH,
+        subTargetCheck: false,
+        objectCaching: false
+    });
+}
 
-    setStatus("text object inserted");
+function splitTextIntoColumns(sourceText, columnCount, columnWidth) {
+    if (columnCount === 1) {
+        return [sourceText];
+    }
 
-    window.setTimeout(() => {
-        text.enterEditing();
-        text.selectAll();
+    let remainingTokens = sourceText.match(/\S+\s*/g) || [];
+    const columns = [];
 
-        canvas.requestRenderAll();
-    }, 170);
+    for (let columnIndex = 0; columnIndex < columnCount - 1; columnIndex += 1) {
+        const remainingColumnCount = columnCount - columnIndex;
+        const remainingText = remainingTokens.join("").trim();
+        const targetHeight =
+            measureArticleTextHeight(remainingText, columnWidth) /
+            remainingColumnCount;
+
+        const maximumTake =
+            remainingTokens.length - (remainingColumnCount - 1);
+
+        let low = 1;
+        let high = Math.max(1, maximumTake);
+        let best = 1;
+
+        while (low <= high) {
+            const middle = Math.floor((low + high) / 2);
+            const candidate = remainingTokens.slice(0, middle).join("").trim();
+            const height = measureArticleTextHeight(candidate, columnWidth);
+
+            if (height <= targetHeight) {
+                best = middle;
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+
+        columns.push(remainingTokens.slice(0, best).join("").trim());
+        remainingTokens = remainingTokens.slice(best);
+    }
+
+    columns.push(remainingTokens.join("").trim());
+    return columns;
+}
+
+function measureArticleTextHeight(sourceText, width) {
+    const measurement = new fabric.Textbox(sourceText || " ", {
+        width,
+        fontFamily: "Georgia",
+        fontSize: ARTICLE_FONT_SIZE,
+        lineHeight: ARTICLE_LINE_HEIGHT
+    });
+
+    return measurement.height || ARTICLE_FONT_SIZE;
+}
+
+function isArticle(object) {
+    return object?.communityPressType === "article";
 }
 /* --------------------------------------------------
    TALK / SPEECH TO TEXT
@@ -554,35 +770,8 @@ function stopSpeechRecognition() {
 }
 
 function insertDictatedText(textValue) {
-    const text = new fabric.Textbox(
-        textValue,
-        {
-            left: 100,
-            top: 220,
-
-            width: 690,
-
-            fontFamily: "Georgia",
-            fontSize: 36,
-            lineHeight: 1.18,
-
-            fill: "#171611",
-
-            editable: true,
-            opacity: 0
-        }
-    );
-
-    canvas.add(text);
-    canvas.setActiveObject(text);
-
-    animateObjectArrival(text, 220);
-
-    lastSelectedObject = text;
-
-    canvas.requestRenderAll();
-
-    setStatus("speech inserted");
+    addArticle(textValue, 2);
+    setStatus("speech inserted as 2-column article");
 }
 /* --------------------------------------------------
    IMAGE IMPORT
@@ -933,52 +1122,6 @@ function keepObjectOnSheet(event) {
     object.setCoords();
 }
 /* --------------------------------------------------
-   DUPLICATE
--------------------------------------------------- */
-
-async function duplicateSelectedObject() {
-    stopDrawing();
-    closeShapeTray();
-
-    const original =
-        canvas.getActiveObject() ||
-        lastSelectedObject;
-
-    if (!original) {
-        setStatus("nothing selected");
-        return;
-    }
-
-    setStatus("duplicating...");
-
-    try {
-        const copy = await original.clone();
-
-        copy.set({
-            left: (original.left ?? 0) + 40,
-            top: (original.top ?? 0) + 40,
-            evented: true,
-            selectable: true
-        });
-
-        canvas.add(copy);
-
-        keepObjectOnSheet({
-            target: copy
-        });
-
-        canvas.setActiveObject(copy);
-        lastSelectedObject = copy;
-
-        canvas.requestRenderAll();
-
-        setStatus("object duplicated");
-    } catch (error) {
-        console.error("Duplicate failed:", error);
-        setStatus("duplicate failed");
-    }
-}
-/* --------------------------------------------------
    DELETE
 -------------------------------------------------- */
 
@@ -1036,7 +1179,7 @@ function rememberChange() {
 }
 
 function saveHistory() {
-    const state = JSON.stringify(canvas.toJSON());
+    const state = JSON.stringify(canvas.toJSON(ARTICLE_PROPERTIES));
 
     if (history.at(-1) === state) {
         return;
@@ -1099,6 +1242,15 @@ async function duplicateSelectedObject() {
 
     try {
         const copy = await original.clone();
+
+        if (isArticle(original)) {
+            copy.set({
+                communityPressType: original.communityPressType,
+                articleText: original.articleText,
+                articleColumns: original.articleColumns,
+                articleWidth: original.articleWidth
+            });
+        }
 
         copy.set({
             left: (original.left ?? 0) + 40,
@@ -1233,10 +1385,18 @@ function updateObjectStatus() {
 
     const objectName = getObjectName(object);
 
-    setStatus(`${objectName} selected`);
+    setStatus(
+        isArticle(object)
+            ? "article selected · double-click to edit"
+            : `${objectName} selected`
+    );
 }
 
 function getObjectName(object) {
+    if (isArticle(object)) {
+        return "article";
+    }
+
     const type =
         object.type?.toLowerCase() ?? "object";
 
