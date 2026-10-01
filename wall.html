@@ -197,6 +197,18 @@ const status =
 let editions = [];
 let currentIndex = 0;
 
+let knownNewestId = null;
+let rotationTimer = null;
+let premiereTimer = null;
+
+const ROTATION_TIME = 30000;   // 30 seconds
+const PREMIERE_TIME = 60000;   // 60 seconds
+
+
+/* --------------------------------------------------
+   LOAD / CHECK PRESS
+-------------------------------------------------- */
+
 async function loadWall() {
     status.textContent = "CHECKING PRESS...";
 
@@ -212,13 +224,16 @@ async function loadWall() {
 
     if (error) {
         console.error(error);
-        status.textContent = "PRESS CONNECTION FAILED";
+
+        status.textContent =
+            "PRESS CONNECTION FAILED";
+
         return;
     }
 
-    editions = data;
+    if (!data.length) {
+        editions = [];
 
-    if (!editions.length) {
         sheetLabel.textContent =
             "WAITING FOR PUBLICATION";
 
@@ -228,65 +243,180 @@ async function loadWall() {
         return;
     }
 
-   if (!editionImage.src) {
-    currentIndex = 0;
-    showEdition(editions[0]);
+    /*
+     * FIRST LOAD
+     *
+     * Show the newest edition normally.
+     * This is NOT treated as a new-publication
+     * takeover.
+     */
+
+    if (knownNewestId === null) {
+        editions = data;
+
+        knownNewestId = data[0].id;
+        currentIndex = 0;
+
+        showEdition(editions[0]);
+
+        status.textContent =
+            "LIVE · PRESS CONNECTED";
+
+        scheduleRotation();
+
+        return;
+    }
+
+
+    /*
+     * NEW PUBLICATION DETECTED
+     */
+
+    const newestEdition = data[0];
+
+    const newPublication =
+        newestEdition.id !== knownNewestId;
+
+    editions = data;
+
+    if (newPublication) {
+        knownNewestId =
+            newestEdition.id;
+
+        premiereEdition(
+            newestEdition
+        );
+
+        return;
+    }
+
+
+    status.textContent =
+        "LIVE · PRESS CONNECTED";
 }
 
-status.textContent =
-    "LIVE · PRESS CONNECTED";
-}
+
+/* --------------------------------------------------
+   SHOW AN EDITION
+-------------------------------------------------- */
 
 function showEdition(row) {
+    if (!row) {
+        return;
+    }
+
     const { data } =
         supabaseClient
             .storage
             .from("community-press")
-            .getPublicUrl(row.image_path);
+            .getPublicUrl(
+                row.image_path
+            );
 
     editionImage.src =
         data.publicUrl;
 
-    /*
-     * For now the visible sheet number is based
-     * on the database edition ID.
-     */
     sheetLabel.textContent =
-        `SHEET ${String(row.id).padStart(5, "0")}`;
+        `SHEET ${String(
+            row.id
+        ).padStart(5, "0")}`;
 }
 
+
+/* --------------------------------------------------
+   NORMAL ARCHIVE ROTATION
+-------------------------------------------------- */
+
+function scheduleRotation() {
+    window.clearTimeout(
+        rotationTimer
+    );
+
+    rotationTimer =
+        window.setTimeout(
+            rotateEdition,
+            ROTATION_TIME
+        );
+}
+
+
 function rotateEdition() {
-    if (editions.length < 2) {
+    if (!editions.length) {
         return;
     }
 
     currentIndex =
-        (currentIndex + 1) % editions.length;
+        (currentIndex + 1) %
+        editions.length;
 
     showEdition(
         editions[currentIndex]
     );
+
+    status.textContent =
+        "LIVE · ARCHIVE ROTATION";
+
+    scheduleRotation();
 }
 
+
+/* --------------------------------------------------
+   NEW PUBLICATION PREMIERE
+-------------------------------------------------- */
+
+function premiereEdition(edition) {
+    /*
+     * Stop normal rotation while somebody's
+     * newly published sheet gets the wall.
+     */
+
+    window.clearTimeout(
+        rotationTimer
+    );
+
+    window.clearTimeout(
+        premiereTimer
+    );
+
+    showEdition(edition);
+
+    currentIndex = 0;
+
+    status.textContent =
+        "JUST PUBLISHED · LIVE";
+
+    premiereTimer =
+        window.setTimeout(() => {
+
+            status.textContent =
+                "LIVE · ARCHIVE ROTATION";
+
+            scheduleRotation();
+
+        }, PREMIERE_TIME);
+}
+
+
+/* --------------------------------------------------
+   CHECK FOR NEW PUBLICATIONS
+-------------------------------------------------- */
+
 /*
- * Reload the archive frequently enough that a newly
- * published sheet appears quickly on the wall.
+ * Poll Supabase every five seconds.
+ *
+ * This updates the archive and detects new
+ * publications WITHOUT changing the page
+ * currently being displayed.
  */
+
 window.setInterval(
     loadWall,
     5000
 );
 
-/*
- * Rotate through recent editions every minute.
- */
-window.setInterval(
-    rotateEdition,
-    60000
-);
+
+/* --------------------------------------------------
+   START WALL
+-------------------------------------------------- */
 
 loadWall();
-</script>
-
-</body>
-</html>
