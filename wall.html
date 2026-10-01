@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Community Press — Wall</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --paper: #d7cfb9;
+            --ink: #171611;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            overflow: hidden;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        #wall {
+            width: 100vw;
+            height: 100vh;
+
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) minmax(0, 3fr);
+
+            gap: clamp(20px, 4vw, 70px);
+            padding: clamp(25px, 4vw, 65px);
+        }
+
+        #identity {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+
+            border-top: 3px solid var(--paper);
+            border-bottom: 3px solid var(--paper);
+
+            padding: 24px 0;
+        }
+
+        #identity h1 {
+            margin: 0;
+
+            font-size: clamp(38px, 5vw, 88px);
+            line-height: 0.88;
+            letter-spacing: -0.055em;
+        }
+
+        #sheetLabel {
+            margin-top: 30px;
+
+            font-size: clamp(18px, 2vw, 32px);
+            font-weight: bold;
+        }
+
+        #message {
+            max-width: 420px;
+
+            font-size: clamp(13px, 1.3vw, 20px);
+            line-height: 1.45;
+        }
+
+        #stage {
+            min-width: 0;
+            min-height: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #edition {
+            display: block;
+
+            max-width: 100%;
+            max-height: 100%;
+
+            aspect-ratio: 11 / 17;
+            object-fit: contain;
+
+            background: var(--paper);
+
+            box-shadow:
+                10px 12px 0 rgba(215, 207, 185, 0.18);
+        }
+
+        #status {
+            opacity: 0.65;
+            font-size: 12px;
+        }
+
+        @media (max-width: 800px) {
+            #wall {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+
+            #identity {
+                display: block;
+                padding: 14px 0;
+            }
+
+            #identity h1 {
+                font-size: 32px;
+            }
+
+            #message {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<main id="wall">
+
+    <section id="identity">
+
+        <div>
+            <h1>
+                COMMUNITY<br>
+                PRESS
+            </h1>
+
+            <div id="sheetLabel">
+                WAITING FOR PUBLICATION
+            </div>
+        </div>
+
+        <div>
+            <p id="message">
+                COMMUNITY PRESS IS MADE BY ITS READERS.
+                PUBLICATION DOES NOT IMPLY ENDORSEMENT.
+            </p>
+
+            <div id="status">
+                CONNECTING TO PRESS...
+            </div>
+        </div>
+
+    </section>
+
+    <section id="stage">
+        <img
+            id="edition"
+            alt="Latest Community Press publication"
+        >
+    </section>
+
+</main>
+
+<script>
+"use strict";
+
+const SUPABASE_URL =
+    "https://nukcfktqqjsfzlxyknhl.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_7A9kGf89X2ob6OUgt_UVJQ_2p1qDeB4";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
+
+const editionImage =
+    document.getElementById("edition");
+
+const sheetLabel =
+    document.getElementById("sheetLabel");
+
+const status =
+    document.getElementById("status");
+
+let editions = [];
+let currentIndex = 0;
+
+async function loadWall() {
+    status.textContent = "CHECKING PRESS...";
+
+    const { data, error } =
+        await supabaseClient
+            .from("community_press_editions")
+            .select("id, created_at, image_path")
+            .eq("status", "published")
+            .order("created_at", {
+                ascending: false
+            })
+            .limit(20);
+
+    if (error) {
+        console.error(error);
+        status.textContent = "PRESS CONNECTION FAILED";
+        return;
+    }
+
+    editions = data;
+
+    if (!editions.length) {
+        sheetLabel.textContent =
+            "WAITING FOR PUBLICATION";
+
+        status.textContent =
+            "PRESS CONNECTED";
+
+        return;
+    }
+
+    currentIndex = 0;
+    showEdition(editions[0]);
+
+    status.textContent =
+        "LIVE · PRESS CONNECTED";
+}
+
+function showEdition(row) {
+    const { data } =
+        supabaseClient
+            .storage
+            .from("community-press")
+            .getPublicUrl(row.image_path);
+
+    editionImage.src =
+        data.publicUrl;
+
+    /*
+     * For now the visible sheet number is based
+     * on the database edition ID.
+     */
+    sheetLabel.textContent =
+        `SHEET ${String(row.id).padStart(5, "0")}`;
+}
+
+function rotateEdition() {
+    if (editions.length < 2) {
+        return;
+    }
+
+    currentIndex =
+        (currentIndex + 1) % editions.length;
+
+    showEdition(
+        editions[currentIndex]
+    );
+}
+
+/*
+ * Reload the archive frequently enough that a newly
+ * published sheet appears quickly on the wall.
+ */
+window.setInterval(
+    loadWall,
+    5000
+);
+
+/*
+ * Rotate through recent editions every minute.
+ */
+window.setInterval(
+    rotateEdition,
+    60000
+);
+
+loadWall();
+</script>
+
+</body>
+</html>
