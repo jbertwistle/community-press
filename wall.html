@@ -228,11 +228,13 @@ async function loadWall() {
         return;
     }
 
+   if (!editionImage.src) {
     currentIndex = 0;
     showEdition(editions[0]);
+}
 
-    status.textContent =
-        "LIVE · PRESS CONNECTED";
+status.textContent =
+    "LIVE · PRESS CONNECTED";
 }
 
 function showEdition(row) {
